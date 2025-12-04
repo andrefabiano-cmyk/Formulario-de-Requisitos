@@ -1,0 +1,636 @@
+import React, { useState } from 'react';
+import { 
+  ClipboardList, 
+  User, 
+  ShoppingCart, 
+  Package, 
+  ArrowRightLeft, 
+  Truck, 
+  BarChart3, 
+  ShieldCheck, 
+  FileText, 
+  CheckCircle2, 
+  Save, 
+  Printer,
+  LayoutDashboard,
+  AlertTriangle,
+  Target,
+  Clock,
+  Unlock,
+  Activity
+} from 'lucide-react';
+
+const SurveyForm = () => {
+  const [formData, setFormData] = useState({
+    // Seção 1
+    nome: '',
+    cargo: '',
+    tempoAtuacao: '',
+    // Seção 2
+    atividades: [],
+    atividadesOutro: '',
+    niveisAcesso: '',
+    pontosCriticos: '',
+    // Seção 3
+    infoProduto: [],
+    infoProdutoOutros: '',
+    alertasAutomaticos: [],
+    ajustesEstoque: '',
+    // Seção 4
+    infoSaida: [],
+    infoSaidaOutro: '',
+    impedirSaidaNegativa: '',
+    registrarEntradas: '',
+    // Seção 5
+    infoFornecedor: [],
+    infoFornecedorOutros: '',
+    avaliacaoFornecedor: '',
+    // Seção 6
+    relatorios: [],
+    trilhaAuditoria: '',
+    // Seção 7
+    facilidadeUso: 3,
+    responsividade: '',
+    seguranca: [],
+    disponibilidade: '',
+    // Seção 8
+    aprovacaoGestor: '',
+    normasLegisla: '',
+    expectativasMelhoria: '',
+    // Seção 9
+    prioridades: '',
+    participarValidacao: ''
+  });
+
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckboxChange = (e, fieldName) => {
+    const { value, checked } = e.target;
+    setFormData(prev => {
+      const currentList = prev[fieldName] || [];
+      if (checked) {
+        return { ...prev, [fieldName]: [...currentList, value] };
+      } else {
+        return { ...prev, [fieldName]: currentList.filter(item => item !== value) };
+      }
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSubmitted(true);
+    window.scrollTo(0, 0);
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Componentes Auxiliares
+  const SectionHeader = ({ icon: Icon, title, description }) => (
+    <div className="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="p-2 bg-blue-100 rounded-lg text-blue-700 print:hidden">
+          <Icon size={24} />
+        </div>
+        <h2 className="text-xl font-bold text-slate-800 uppercase tracking-wide">{title}</h2>
+      </div>
+      {description && <p className="text-slate-500 text-sm ml-1">{description}</p>}
+    </div>
+  );
+
+  const QuestionBlock = ({ label, children, required }) => (
+    <div className="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+      <label className="block text-slate-700 font-semibold mb-3">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      {children}
+    </div>
+  );
+
+  // Componente do Cartão do Dashboard
+  const DashboardCard = ({ title, icon: Icon, children, className = "" }) => (
+    <div className={`bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:border print:shadow-none ${className}`}>
+      <div className="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2">
+        <Icon size={16} />
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+
+  const Tag = ({ children, color = "bg-blue-100 text-blue-800" }) => (
+    <span className={`px-2 py-1 rounded-md text-xs font-medium ${color} mr-2 mb-2 inline-block`}>
+      {children}
+    </span>
+  );
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-slate-100 pb-12 font-sans print:bg-white">
+        {/* Dashboard Header */}
+        <header className="bg-slate-900 text-white py-8 px-6 shadow-md print:bg-white print:text-black print:border-b-2">
+          <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <LayoutDashboard className="text-blue-400 print:text-black" />
+                <h1 className="text-2xl font-bold">Dashboard de Requisitos</h1>
+              </div>
+              <p className="text-slate-400 text-sm print:text-slate-600">Visualização consolidada das respostas do levantamento</p>
+            </div>
+            <div className="flex gap-3 print:hidden">
+              <button 
+                onClick={() => setSubmitted(false)}
+                className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors text-sm font-medium"
+              >
+                Editar
+              </button>
+              <button 
+                onClick={handlePrint}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium shadow-sm"
+              >
+                <Printer size={16} /> Imprimir / PDF
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-6xl mx-auto px-6 -mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 print:px-0 print:mt-6 print:block">
+          
+          {/* Coluna 1: Perfil e Resumo Crítico */}
+          <div className="space-y-6 print:mb-6 print:break-inside-avoid">
+            {/* Card de Perfil */}
+            <DashboardCard title="Perfil do Respondente" icon={User} className="border-t-4 border-t-blue-500">
+              <div className="text-center md:text-left">
+                <h3 className="text-xl font-bold text-slate-800">{formData.nome || "Não informado"}</h3>
+                <p className="text-blue-600 font-medium">{formData.cargo || "Cargo não informado"}</p>
+                <div className="flex items-center justify-center md:justify-start gap-2 mt-3 text-slate-500 text-sm">
+                  <Clock size={14} />
+                  <span>Experiência: {formData.tempoAtuacao || "-"}</span>
+                </div>
+              </div>
+            </DashboardCard>
+
+            {/* Score de Facilidade de Uso */}
+            <DashboardCard title="Expectativa de UX" icon={Activity}>
+              <div className="flex items-end gap-2 mb-2">
+                <span className="text-4xl font-bold text-slate-800">{formData.facilidadeUso}</span>
+                <span className="text-slate-400 mb-1">/ 5</span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2.5 mb-2">
+                <div 
+                  className={`h-2.5 rounded-full ${formData.facilidadeUso >= 4 ? 'bg-green-500' : formData.facilidadeUso >= 3 ? 'bg-yellow-500' : 'bg-red-500'}`} 
+                  style={{ width: `${(formData.facilidadeUso / 5) * 100}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-slate-500">
+                {formData.facilidadeUso >= 4 ? "Alta exigência de usabilidade e intuitividade." : "Foco funcional com curva de aprendizado aceitável."}
+              </p>
+            </DashboardCard>
+            
+            {/* Níveis de Segurança */}
+             <DashboardCard title="Segurança Exigida" icon={ShieldCheck}>
+              <div className="flex flex-wrap gap-2">
+                {formData.seguranca.length > 0 ? (
+                  formData.seguranca.map((item, idx) => (
+                    <Tag key={idx} color="bg-red-50 text-red-700 border border-red-100">{item}</Tag>
+                  ))
+                ) : <span className="text-slate-400 text-sm">Nenhum requisito específico selecionado.</span>}
+              </div>
+              <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-sm">
+                <span className="text-slate-600">Auditoria Completa?</span>
+                <span className={`font-bold ${formData.trilhaAuditoria === 'Sim' ? 'text-green-600' : 'text-slate-500'}`}>
+                  {formData.trilhaAuditoria || "-"}
+                </span>
+              </div>
+            </DashboardCard>
+          </div>
+
+          {/* Coluna 2: Contexto Operacional e Funcional */}
+          <div className="space-y-6 md:col-span-2 print:mb-6">
+            
+            {/* Pontos Críticos */}
+            <DashboardCard title="Pontos Críticos & Dores" icon={AlertTriangle} className="bg-orange-50 border-orange-200">
+              <div className="relative pl-4 border-l-4 border-orange-300">
+                <p className="text-slate-700 italic text-sm md:text-base">
+                  "{formData.pontosCriticos || "Nenhum ponto crítico descrito."}"
+                </p>
+              </div>
+            </DashboardCard>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:block print:space-y-6">
+              {/* Escopo de Atividades */}
+              <DashboardCard title="Escopo Operacional" icon={CheckCircle2}>
+                <ul className="space-y-2 text-sm text-slate-700">
+                  {formData.atividades.length > 0 ? formData.atividades.map((atv, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                      {atv}
+                    </li>
+                  )) : <li className="text-slate-400">Nenhuma atividade selecionada</li>}
+                  {formData.atividadesOutro && (
+                    <li className="flex items-center gap-2 font-medium text-blue-700">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                      {formData.atividadesOutro}
+                    </li>
+                  )}
+                </ul>
+              </DashboardCard>
+
+              {/* Funcionalidades Chave */}
+              <DashboardCard title="Requisitos de Dados" icon={FileText}>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase">Produto</h4>
+                    <div className="flex flex-wrap">
+                      {formData.infoProduto.slice(0, 4).map((i, idx) => <Tag key={idx}>{i}</Tag>)}
+                      {formData.infoProduto.length > 4 && <Tag color="bg-slate-100 text-slate-600">+{formData.infoProduto.length - 4}</Tag>}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase">Fornecedor</h4>
+                    <div className="flex flex-wrap">
+                      {formData.infoFornecedor.slice(0, 3).map((i, idx) => <Tag key={idx} color="bg-purple-50 text-purple-700">{i}</Tag>)}
+                    </div>
+                  </div>
+                </div>
+              </DashboardCard>
+            </div>
+
+            {/* Prioridades e Melhorias */}
+            <DashboardCard title="Objetivos Estratégicos" icon={Target} className="bg-gradient-to-r from-white to-blue-50">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-sm font-bold text-blue-900 mb-2">Principais Prioridades</h4>
+                  <p className="text-slate-700 text-sm bg-white p-3 rounded border border-blue-100 shadow-sm">
+                    {formData.prioridades || "Não informado"}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-green-900 mb-2">Melhoria Esperada</h4>
+                  <p className="text-slate-700 text-sm bg-white p-3 rounded border border-green-100 shadow-sm">
+                    {formData.expectativasMelhoria || "Não informado"}
+                  </p>
+                </div>
+              </div>
+            </DashboardCard>
+
+            {/* Rodapé do Relatório */}
+            <div className="flex justify-between items-center text-xs text-slate-400 pt-4 print:text-black">
+              <span>Gerado em: {new Date().toLocaleDateString()}</span>
+              <span>ID Sessão: {Math.random().toString(36).substr(2, 9).toUpperCase()}</span>
+            </div>
+
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 pb-12 print:bg-white">
+      {/* Header */}
+      <header className="bg-blue-900 text-white py-8 px-6 shadow-lg print:bg-white print:text-black print:border-b-2 print:border-black">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center gap-4 mb-4">
+            <ClipboardList size={40} className="text-blue-300 print:text-black" />
+            <h1 className="text-3xl font-bold">Levantamento de Requisitos</h1>
+          </div>
+          <h2 className="text-xl text-blue-100 mb-2 font-light print:text-black">Sistema de Gestão de Compras, Estoque e Fornecedores</h2>
+          <p className="opacity-80 max-w-2xl text-sm leading-relaxed print:text-black">
+            Este formulário tem como objetivo coletar informações técnicas, operacionais e estratégicas junto à equipe de compras, a fim de identificar necessidades para o desenvolvimento do novo sistema.
+          </p>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-6 -mt-6 print:mt-0 print:px-0">
+        <form onSubmit={handleSubmit} className="space-y-2">
+          
+          {/* SEÇÃO 1 */}
+          <SectionHeader icon={User} title="Seção 1 — Identificação do Respondente" />
+          
+          <QuestionBlock label="Nome completo" required>
+            <input 
+              type="text" name="nome" value={formData.nome} onChange={handleInputChange} required
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta"
+            />
+          </QuestionBlock>
+
+          <QuestionBlock label="Cargo/Função na área de compras" required>
+            <input 
+              type="text" name="cargo" value={formData.cargo} onChange={handleInputChange} required
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta"
+            />
+          </QuestionBlock>
+
+          <QuestionBlock label="Tempo de atuação na área">
+            <div className="space-y-2">
+              {['Menos de 1 ano', '1 a 3 anos', '3 a 5 anos', 'Mais de 5 anos'].map((opt) => (
+                <label key={opt} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded">
+                  <input type="radio" name="tempoAtuacao" value={opt} checked={formData.tempoAtuacao === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
+                  <span className="text-slate-700">{opt}</span>
+                </label>
+              ))}
+            </div>
+          </QuestionBlock>
+
+          {/* SEÇÃO 2 */}
+          <SectionHeader icon={ShoppingCart} title="Seção 2 — Caracterização da Operação" />
+
+          <QuestionBlock label="Quais atividades você executa diretamente?">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {['Solicitação de compras', 'Análise de cotações', 'Emissão de ordens de compra', 'Controle de estoque', 'Avaliação de fornecedores', 'Registro de saídas/consumo'].map((item) => (
+                <label key={item} className="flex items-center gap-3 p-2 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer">
+                  <input type="checkbox" value={item} checked={formData.atividades.includes(item)} onChange={(e) => handleCheckboxChange(e, 'atividades')} className="w-4 h-4 rounded text-blue-600" />
+                  <span className="text-slate-700">{item}</span>
+                </label>
+              ))}
+            </div>
+            <input 
+              type="text" name="atividadesOutro" value={formData.atividadesOutro} onChange={handleInputChange}
+              className="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outras (especifique)"
+            />
+          </QuestionBlock>
+
+          <QuestionBlock label="Existem diferentes níveis de acesso necessários no sistema?">
+            <div className="flex gap-6">
+              {['Sim', 'Não', 'Não sei'].map((opt) => (
+                <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="niveisAcesso" value={opt} checked={formData.niveisAcesso === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
+                  <span>{opt}</span>
+                </label>
+              ))}
+            </div>
+          </QuestionBlock>
+
+          <QuestionBlock label="Descreva os pontos mais críticos do processo atual de compras e estoque.">
+            <textarea 
+              name="pontosCriticos" value={formData.pontosCriticos} onChange={handleInputChange} rows={4}
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta"
+            />
+          </QuestionBlock>
+
+          {/* SEÇÃO 3 */}
+          <SectionHeader icon={Package} title="Seção 3 — Requisitos Funcionais: Produtos / Estoque" />
+
+          <QuestionBlock label="Quais informações devem ser obrigatórias no cadastro de produtos?">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {['Nome do produto', 'Categoria', 'Unidade (UN, KG, CX etc.)', 'Estoque mínimo', 'Preço unitário', 'Validade', 'Fornecedor principal', 'Quantidade inicial'].map((item) => (
+                <label key={item} className="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50">
+                  <input type="checkbox" value={item} checked={formData.infoProduto.includes(item)} onChange={(e) => handleCheckboxChange(e, 'infoProduto')} className="w-4 h-4 rounded text-blue-600" />
+                  <span className="text-slate-700">{item}</span>
+                </label>
+              ))}
+            </div>
+            <input 
+              type="text" name="infoProdutoOutros" value={formData.infoProdutoOutros} onChange={handleInputChange}
+              className="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outros (especifique)"
+            />
+          </QuestionBlock>
+
+          <QuestionBlock label="O sistema deve emitir alertas automáticos quando:">
+            <div className="space-y-2">
+              {['Produto atingir o estoque mínimo', 'Produto estiver próximo da validade', 'Produto estiver vencido', 'Houver inconsistências de estoque', 'Não é necessário'].map((item) => (
+                <label key={item} className="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50">
+                  <input type="checkbox" value={item} checked={formData.alertasAutomaticos.includes(item)} onChange={(e) => handleCheckboxChange(e, 'alertasAutomaticos')} className="w-4 h-4 rounded text-blue-600" />
+                  <span className="text-slate-700">{item}</span>
+                </label>
+              ))}
+            </div>
+          </QuestionBlock>
+
+          <QuestionBlock label="A equipe necessita registrar manualmente ajustes de estoque?">
+            <div className="flex gap-6">
+              {['Sim', 'Não', 'Somente com justificativa'].map((opt) => (
+                <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="ajustesEstoque" value={opt} checked={formData.ajustesEstoque === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
+                  <span>{opt}</span>
+                </label>
+              ))}
+            </div>
+          </QuestionBlock>
+
+          {/* SEÇÃO 4 */}
+          <SectionHeader icon={ArrowRightLeft} title="Seção 4 — Requisitos Funcionais: Movimentações" />
+
+          <QuestionBlock label="Quais informações são obrigatórias ao registrar uma saída de estoque?">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {['Produto', 'Quantidade', 'Data da retirada', 'Responsável', 'Destino / Centro de custo', 'Observações'].map((item) => (
+                <label key={item} className="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50">
+                  <input type="checkbox" value={item} checked={formData.infoSaida.includes(item)} onChange={(e) => handleCheckboxChange(e, 'infoSaida')} className="w-4 h-4 rounded text-blue-600" />
+                  <span className="text-slate-700">{item}</span>
+                </label>
+              ))}
+            </div>
+             <input 
+              type="text" name="infoSaidaOutro" value={formData.infoSaidaOutro} onChange={handleInputChange}
+              className="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outro (especifique)"
+            />
+          </QuestionBlock>
+
+          <QuestionBlock label="O sistema deve impedir saída maior que o saldo disponível?">
+            <div className="space-y-2">
+              {['Sim', 'Não', 'Deve permitir, mas exigir justificativa'].map((opt) => (
+                <label key={opt} className="flex items-center gap-3 cursor-pointer">
+                  <input type="radio" name="impedirSaidaNegativa" value={opt} checked={formData.impedirSaidaNegativa === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
+                  <span>{opt}</span>
+                </label>
+              ))}
+            </div>
+          </QuestionBlock>
+          
+           <QuestionBlock label="Há necessidade de registrar entradas (compras) dentro do sistema?">
+            <div className="flex gap-6">
+              {['Sim', 'Não', 'Futuramente'].map((opt) => (
+                <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="registrarEntradas" value={opt} checked={formData.registrarEntradas === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
+                  <span>{opt}</span>
+                </label>
+              ))}
+            </div>
+          </QuestionBlock>
+
+          {/* SEÇÃO 5 */}
+          <SectionHeader icon={Truck} title="Seção 5 — Requisitos Funcionais: Fornecedores" />
+          
+          <QuestionBlock label="Quais informações são essenciais no cadastro de fornecedores?">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {['Nome/Razão social', 'CNPJ', 'Contato', 'Avaliação de desempenho', 'Prazo de entrega'].map((item) => (
+                <label key={item} className="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50">
+                  <input type="checkbox" value={item} checked={formData.infoFornecedor.includes(item)} onChange={(e) => handleCheckboxChange(e, 'infoFornecedor')} className="w-4 h-4 rounded text-blue-600" />
+                  <span className="text-slate-700">{item}</span>
+                </label>
+              ))}
+            </div>
+             <input 
+              type="text" name="infoFornecedorOutros" value={formData.infoFornecedorOutros} onChange={handleInputChange}
+              className="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outro (especifique)"
+            />
+          </QuestionBlock>
+
+          <QuestionBlock label="O sistema deve permitir avaliação de fornecedores?">
+             <div className="flex gap-6">
+              {['Sim', 'Não', 'Talvez'].map((opt) => (
+                <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="avaliacaoFornecedor" value={opt} checked={formData.avaliacaoFornecedor === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
+                  <span>{opt}</span>
+                </label>
+              ))}
+            </div>
+          </QuestionBlock>
+
+          {/* SEÇÃO 6 */}
+          <SectionHeader icon={BarChart3} title="Seção 6 — Relatórios, Indicadores e Auditoria" />
+          
+          <QuestionBlock label="Quais relatórios a equipe considera indispensáveis?">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {['Consumo por destino', 'Histórico de saídas', 'Valor total em estoque', 'Itens vencendo', 'Indicadores gráficos', 'Exportação em PDF', 'Exportação em Excel'].map((item) => (
+                <label key={item} className="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50">
+                  <input type="checkbox" value={item} checked={formData.relatorios.includes(item)} onChange={(e) => handleCheckboxChange(e, 'relatorios')} className="w-4 h-4 rounded text-blue-600" />
+                  <span className="text-slate-700">{item}</span>
+                </label>
+              ))}
+            </div>
+          </QuestionBlock>
+
+           <QuestionBlock label="O sistema deve registrar trilha de auditoria completa? (Ações de usuários)">
+             <div className="flex gap-6">
+              {['Sim', 'Não', 'Apenas para exclusões'].map((opt) => (
+                <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="trilhaAuditoria" value={opt} checked={formData.trilhaAuditoria === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
+                  <span>{opt}</span>
+                </label>
+              ))}
+            </div>
+          </QuestionBlock>
+
+          {/* SEÇÃO 7 */}
+          <SectionHeader icon={ShieldCheck} title="Seção 7 — Requisitos Não Funcionais" />
+
+          <QuestionBlock label="Qual nível de facilidade de uso é esperado do sistema? (1 = Muito difícil, 5 = Muito fácil)">
+            <div className="flex items-center justify-between max-w-md mt-4">
+              <span className="text-xs text-slate-500 font-bold">Muito difícil</span>
+              <div className="flex gap-4">
+                {[1, 2, 3, 4, 5].map((val) => (
+                  <label key={val} className="flex flex-col items-center cursor-pointer">
+                    <input 
+                      type="radio" name="facilidadeUso" value={val} 
+                      checked={parseInt(formData.facilidadeUso) === val} 
+                      onChange={handleInputChange} 
+                      className="w-5 h-5 text-blue-600 mb-1" 
+                    />
+                    <span className="text-sm font-medium text-slate-700">{val}</span>
+                  </label>
+                ))}
+              </div>
+              <span className="text-xs text-slate-500 font-bold">Muito fácil</span>
+            </div>
+          </QuestionBlock>
+
+          <QuestionBlock label="A responsividade (funcionar bem no celular) é obrigatória?">
+            <div className="space-y-2">
+              {['Sim', 'Não', 'Desejável, mas não obrigatório'].map((opt) => (
+                <label key={opt} className="flex items-center gap-3 cursor-pointer">
+                  <input type="radio" name="responsividade" value={opt} checked={formData.responsividade === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
+                  <span>{opt}</span>
+                </label>
+              ))}
+            </div>
+          </QuestionBlock>
+
+          <QuestionBlock label="Quais níveis de segurança são essenciais?">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {['Login seguro', 'Permissões por usuário', 'Criptografia de dados', 'Registro de ações', 'Controle de acesso a módulos', 'Não sei dizer'].map((item) => (
+                <label key={item} className="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50">
+                  <input type="checkbox" value={item} checked={formData.seguranca.includes(item)} onChange={(e) => handleCheckboxChange(e, 'seguranca')} className="w-4 h-4 rounded text-blue-600" />
+                  <span className="text-slate-700">{item}</span>
+                </label>
+              ))}
+            </div>
+          </QuestionBlock>
+
+          <QuestionBlock label="Qual a disponibilidade desejada para o sistema?">
+             <div className="flex gap-6 flex-wrap">
+              {['24/7', 'Horário comercial', 'Sem exigência específica'].map((opt) => (
+                <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="disponibilidade" value={opt} checked={formData.disponibilidade === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
+                  <span>{opt}</span>
+                </label>
+              ))}
+            </div>
+          </QuestionBlock>
+
+          {/* SEÇÃO 8 */}
+          <SectionHeader icon={FileText} title="Seção 8 — Expectativas, Regras e Conformidade" />
+
+          <QuestionBlock label="Quais ações do sistema devem exigir aprovação de um gestor?">
+             <textarea 
+              name="aprovacaoGestor" value={formData.aprovacaoGestor} onChange={handleInputChange} rows={3}
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Compras acima de R$ 5.000,00"
+            />
+          </QuestionBlock>
+          
+          <QuestionBlock label="Existem normas internas ou legislações que o sistema deve obedecer? (Ex.: LGPD)">
+             <textarea 
+              name="normasLegisla" value={formData.normasLegisla} onChange={handleInputChange} rows={3}
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta"
+            />
+          </QuestionBlock>
+          
+          <QuestionBlock label="Quais melhorias a equipe espera alcançar com o novo sistema?">
+             <textarea 
+              name="expectativasMelhoria" value={formData.expectativasMelhoria} onChange={handleInputChange} rows={3}
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Redução de perdas, agilidade na compra..."
+            />
+          </QuestionBlock>
+
+          {/* SEÇÃO 9 */}
+          <SectionHeader icon={CheckCircle2} title="Seção 9 — Validação Final" />
+
+          <QuestionBlock label="Em sua visão, quais são as três prioridades principais para o desenvolvimento do sistema?">
+             <input 
+              type="text" name="prioridades" value={formData.prioridades} onChange={handleInputChange}
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="1. ..., 2. ..., 3. ..."
+            />
+          </QuestionBlock>
+
+          <QuestionBlock label="Deseja participar das validações futuras do sistema?">
+            <div className="flex gap-6">
+              {['Sim', 'Não', 'Talvez'].map((opt) => (
+                <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="participarValidacao" value={opt} checked={formData.participarValidacao === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
+                  <span>{opt}</span>
+                </label>
+              ))}
+            </div>
+          </QuestionBlock>
+
+          {/* Footer Actions */}
+          <div className="mt-12 mb-20 flex justify-end items-center gap-4 pt-6 border-t border-slate-200 print:hidden">
+            <button 
+              type="button" 
+              onClick={handlePrint}
+              className="px-6 py-3 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
+            >
+              <Printer size={18} /> Imprimir em Branco
+            </button>
+            <button 
+              type="submit" 
+              className="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all flex items-center gap-2"
+            >
+              <Save size={18} /> Enviar Respostas
+            </button>
+          </div>
+
+        </form>
+      </main>
+    </div>
+  );
+};
+
+export default SurveyForm;
