@@ -1,636 +1,667 @@
-import React, { useState } from 'react';
-import { 
-  ClipboardList, 
-  User, 
-  ShoppingCart, 
-  Package, 
-  ArrowRightLeft, 
-  Truck, 
-  BarChart3, 
-  ShieldCheck, 
-  FileText, 
-  CheckCircle2, 
-  Save, 
-  Printer,
-  LayoutDashboard,
-  AlertTriangle,
-  Target,
-  Clock,
-  Unlock,
-  Activity
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Levantamento de Requisitos - Sistema de Gestão</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-const SurveyForm = () => {
-  const [formData, setFormData] = useState({
-    // Seção 1
-    nome: '',
-    cargo: '',
-    tempoAtuacao: '',
-    // Seção 2
-    atividades: [],
-    atividadesOutro: '',
-    niveisAcesso: '',
-    pontosCriticos: '',
-    // Seção 3
-    infoProduto: [],
-    infoProdutoOutros: '',
-    alertasAutomaticos: [],
-    ajustesEstoque: '',
-    // Seção 4
-    infoSaida: [],
-    infoSaidaOutro: '',
-    impedirSaidaNegativa: '',
-    registrarEntradas: '',
-    // Seção 5
-    infoFornecedor: [],
-    infoFornecedorOutros: '',
-    avaliacaoFornecedor: '',
-    // Seção 6
-    relatorios: [],
-    trilhaAuditoria: '',
-    // Seção 7
-    facilidadeUso: 3,
-    responsividade: '',
-    seguranca: [],
-    disponibilidade: '',
-    // Seção 8
-    aprovacaoGestor: '',
-    normasLegisla: '',
-    expectativasMelhoria: '',
-    // Seção 9
-    prioridades: '',
-    participarValidacao: ''
-  });
+    <!-- Fontes (Opcional, para melhor estética) -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        @media print {
+            .no-print { display: none !important; }
+            .print-break-avoid { break-inside: avoid; }
+            .print-block { display: block !important; }
+            .print-mt-6 { margin-top: 1.5rem !important; }
+            body { background-color: white; }
+        }
+    </style>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a' },
+                        blue: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 min-h-screen pb-12 text-slate-800">
 
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleCheckboxChange = (e, fieldName) => {
-    const { value, checked } = e.target;
-    setFormData(prev => {
-      const currentList = prev[fieldName] || [];
-      if (checked) {
-        return { ...prev, [fieldName]: [...currentList, value] };
-      } else {
-        return { ...prev, [fieldName]: currentList.filter(item => item !== value) };
-      }
-    });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSubmitted(true);
-    window.scrollTo(0, 0);
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  // Componentes Auxiliares
-  const SectionHeader = ({ icon: Icon, title, description }) => (
-    <div className="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 bg-blue-100 rounded-lg text-blue-700 print:hidden">
-          <Icon size={24} />
-        </div>
-        <h2 className="text-xl font-bold text-slate-800 uppercase tracking-wide">{title}</h2>
-      </div>
-      {description && <p className="text-slate-500 text-sm ml-1">{description}</p>}
-    </div>
-  );
-
-  const QuestionBlock = ({ label, children, required }) => (
-    <div className="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-      <label className="block text-slate-700 font-semibold mb-3">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {children}
-    </div>
-  );
-
-  // Componente do Cartão do Dashboard
-  const DashboardCard = ({ title, icon: Icon, children, className = "" }) => (
-    <div className={`bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:border print:shadow-none ${className}`}>
-      <div className="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2">
-        <Icon size={16} />
-        {title}
-      </div>
-      {children}
-    </div>
-  );
-
-  const Tag = ({ children, color = "bg-blue-100 text-blue-800" }) => (
-    <span className={`px-2 py-1 rounded-md text-xs font-medium ${color} mr-2 mb-2 inline-block`}>
-      {children}
-    </span>
-  );
-
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-slate-100 pb-12 font-sans print:bg-white">
-        {/* Dashboard Header */}
-        <header className="bg-slate-900 text-white py-8 px-6 shadow-md print:bg-white print:text-black print:border-b-2">
-          <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <LayoutDashboard className="text-blue-400 print:text-black" />
-                <h1 className="text-2xl font-bold">Dashboard de Requisitos</h1>
-              </div>
-              <p className="text-slate-400 text-sm print:text-slate-600">Visualização consolidada das respostas do levantamento</p>
+    <!-- VIEW: FORMULÁRIO -->
+    <div id="form-view">
+        <!-- Header -->
+        <header class="bg-blue-900 text-white py-8 px-6 shadow-lg print:bg-white print:text-black print:border-b-2 print:border-black">
+            <div class="max-w-4xl mx-auto">
+                <div class="flex items-center gap-4 mb-4">
+                    <i data-lucide="clipboard-list" class="w-10 h-10 text-blue-300 print:text-black"></i>
+                    <h1 class="text-3xl font-bold">Levantamento de Requisitos</h1>
+                </div>
+                <h2 class="text-xl text-blue-100 mb-2 font-light print:text-black">Sistema de Gestão de Compras, Estoque e Fornecedores</h2>
+                <p class="opacity-80 max-w-2xl text-sm leading-relaxed print:text-black">
+                    Este formulário tem como objetivo coletar informações técnicas, operacionais e estratégicas junto à equipe de compras, a fim de identificar necessidades para o desenvolvimento do novo sistema.
+                </p>
             </div>
-            <div className="flex gap-3 print:hidden">
-              <button 
-                onClick={() => setSubmitted(false)}
-                className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors text-sm font-medium"
-              >
-                Editar
-              </button>
-              <button 
-                onClick={handlePrint}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium shadow-sm"
-              >
-                <Printer size={16} /> Imprimir / PDF
-              </button>
-            </div>
-          </div>
         </header>
 
-        <main className="max-w-6xl mx-auto px-6 -mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 print:px-0 print:mt-6 print:block">
-          
-          {/* Coluna 1: Perfil e Resumo Crítico */}
-          <div className="space-y-6 print:mb-6 print:break-inside-avoid">
-            {/* Card de Perfil */}
-            <DashboardCard title="Perfil do Respondente" icon={User} className="border-t-4 border-t-blue-500">
-              <div className="text-center md:text-left">
-                <h3 className="text-xl font-bold text-slate-800">{formData.nome || "Não informado"}</h3>
-                <p className="text-blue-600 font-medium">{formData.cargo || "Cargo não informado"}</p>
-                <div className="flex items-center justify-center md:justify-start gap-2 mt-3 text-slate-500 text-sm">
-                  <Clock size={14} />
-                  <span>Experiência: {formData.tempoAtuacao || "-"}</span>
-                </div>
-              </div>
-            </DashboardCard>
-
-            {/* Score de Facilidade de Uso */}
-            <DashboardCard title="Expectativa de UX" icon={Activity}>
-              <div className="flex items-end gap-2 mb-2">
-                <span className="text-4xl font-bold text-slate-800">{formData.facilidadeUso}</span>
-                <span className="text-slate-400 mb-1">/ 5</span>
-              </div>
-              <div className="w-full bg-slate-200 rounded-full h-2.5 mb-2">
-                <div 
-                  className={`h-2.5 rounded-full ${formData.facilidadeUso >= 4 ? 'bg-green-500' : formData.facilidadeUso >= 3 ? 'bg-yellow-500' : 'bg-red-500'}`} 
-                  style={{ width: `${(formData.facilidadeUso / 5) * 100}%` }}
-                ></div>
-              </div>
-              <p className="text-xs text-slate-500">
-                {formData.facilidadeUso >= 4 ? "Alta exigência de usabilidade e intuitividade." : "Foco funcional com curva de aprendizado aceitável."}
-              </p>
-            </DashboardCard>
-            
-            {/* Níveis de Segurança */}
-             <DashboardCard title="Segurança Exigida" icon={ShieldCheck}>
-              <div className="flex flex-wrap gap-2">
-                {formData.seguranca.length > 0 ? (
-                  formData.seguranca.map((item, idx) => (
-                    <Tag key={idx} color="bg-red-50 text-red-700 border border-red-100">{item}</Tag>
-                  ))
-                ) : <span className="text-slate-400 text-sm">Nenhum requisito específico selecionado.</span>}
-              </div>
-              <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-sm">
-                <span className="text-slate-600">Auditoria Completa?</span>
-                <span className={`font-bold ${formData.trilhaAuditoria === 'Sim' ? 'text-green-600' : 'text-slate-500'}`}>
-                  {formData.trilhaAuditoria || "-"}
-                </span>
-              </div>
-            </DashboardCard>
-          </div>
-
-          {/* Coluna 2: Contexto Operacional e Funcional */}
-          <div className="space-y-6 md:col-span-2 print:mb-6">
-            
-            {/* Pontos Críticos */}
-            <DashboardCard title="Pontos Críticos & Dores" icon={AlertTriangle} className="bg-orange-50 border-orange-200">
-              <div className="relative pl-4 border-l-4 border-orange-300">
-                <p className="text-slate-700 italic text-sm md:text-base">
-                  "{formData.pontosCriticos || "Nenhum ponto crítico descrito."}"
-                </p>
-              </div>
-            </DashboardCard>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:block print:space-y-6">
-              {/* Escopo de Atividades */}
-              <DashboardCard title="Escopo Operacional" icon={CheckCircle2}>
-                <ul className="space-y-2 text-sm text-slate-700">
-                  {formData.atividades.length > 0 ? formData.atividades.map((atv, i) => (
-                    <li key={i} className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                      {atv}
-                    </li>
-                  )) : <li className="text-slate-400">Nenhuma atividade selecionada</li>}
-                  {formData.atividadesOutro && (
-                    <li className="flex items-center gap-2 font-medium text-blue-700">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                      {formData.atividadesOutro}
-                    </li>
-                  )}
-                </ul>
-              </DashboardCard>
-
-              {/* Funcionalidades Chave */}
-              <DashboardCard title="Requisitos de Dados" icon={FileText}>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase">Produto</h4>
-                    <div className="flex flex-wrap">
-                      {formData.infoProduto.slice(0, 4).map((i, idx) => <Tag key={idx}>{i}</Tag>)}
-                      {formData.infoProduto.length > 4 && <Tag color="bg-slate-100 text-slate-600">+{formData.infoProduto.length - 4}</Tag>}
+        <main class="max-w-4xl mx-auto px-6 -mt-6 print:mt-0 print:px-0 relative z-10">
+            <form id="requirementsForm" class="space-y-2">
+                
+                <!-- SEÇÃO 1 -->
+                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
+                            <i data-lucide="user" class="w-6 h-6"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 1 — Identificação do Respondente</h2>
                     </div>
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase">Fornecedor</h4>
-                    <div className="flex flex-wrap">
-                      {formData.infoFornecedor.slice(0, 3).map((i, idx) => <Tag key={idx} color="bg-purple-50 text-purple-700">{i}</Tag>)}
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Nome completo <span class="text-red-500">*</span></label>
+                    <input type="text" name="nome" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta">
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Cargo/Função na área de compras <span class="text-red-500">*</span></label>
+                    <input type="text" name="cargo" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta">
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Tempo de atuação na área</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded"><input type="radio" name="tempoAtuacao" value="Menos de 1 ano" class="w-4 h-4 text-blue-600"> <span class="text-slate-700">Menos de 1 ano</span></label>
+                        <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded"><input type="radio" name="tempoAtuacao" value="1 a 3 anos" class="w-4 h-4 text-blue-600"> <span class="text-slate-700">1 a 3 anos</span></label>
+                        <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded"><input type="radio" name="tempoAtuacao" value="3 a 5 anos" class="w-4 h-4 text-blue-600"> <span class="text-slate-700">3 a 5 anos</span></label>
+                        <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded"><input type="radio" name="tempoAtuacao" value="Mais de 5 anos" class="w-4 h-4 text-blue-600"> <span class="text-slate-700">Mais de 5 anos</span></label>
                     </div>
-                  </div>
                 </div>
-              </DashboardCard>
-            </div>
 
-            {/* Prioridades e Melhorias */}
-            <DashboardCard title="Objetivos Estratégicos" icon={Target} className="bg-gradient-to-r from-white to-blue-50">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="text-sm font-bold text-blue-900 mb-2">Principais Prioridades</h4>
-                  <p className="text-slate-700 text-sm bg-white p-3 rounded border border-blue-100 shadow-sm">
-                    {formData.prioridades || "Não informado"}
-                  </p>
+                <!-- SEÇÃO 2 -->
+                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
+                            <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 2 — Caracterização da Operação</h2>
+                    </div>
                 </div>
-                <div>
-                  <h4 className="text-sm font-bold text-green-900 mb-2">Melhoria Esperada</h4>
-                  <p className="text-slate-700 text-sm bg-white p-3 rounded border border-green-100 shadow-sm">
-                    {formData.expectativasMelhoria || "Não informado"}
-                  </p>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Quais atividades você executa diretamente?</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <label class="flex items-center gap-3 p-2 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer"><input type="checkbox" name="atividades" value="Solicitação de compras" class="w-4 h-4 rounded text-blue-600"> <span class="text-slate-700">Solicitação de compras</span></label>
+                        <label class="flex items-center gap-3 p-2 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer"><input type="checkbox" name="atividades" value="Análise de cotações" class="w-4 h-4 rounded text-blue-600"> <span class="text-slate-700">Análise de cotações</span></label>
+                        <label class="flex items-center gap-3 p-2 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer"><input type="checkbox" name="atividades" value="Emissão de ordens de compra" class="w-4 h-4 rounded text-blue-600"> <span class="text-slate-700">Emissão de ordens de compra</span></label>
+                        <label class="flex items-center gap-3 p-2 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer"><input type="checkbox" name="atividades" value="Controle de estoque" class="w-4 h-4 rounded text-blue-600"> <span class="text-slate-700">Controle de estoque</span></label>
+                        <label class="flex items-center gap-3 p-2 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer"><input type="checkbox" name="atividades" value="Avaliação de fornecedores" class="w-4 h-4 rounded text-blue-600"> <span class="text-slate-700">Avaliação de fornecedores</span></label>
+                        <label class="flex items-center gap-3 p-2 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer"><input type="checkbox" name="atividades" value="Registro de saídas/consumo" class="w-4 h-4 rounded text-blue-600"> <span class="text-slate-700">Registro de saídas/consumo</span></label>
+                    </div>
+                    <input type="text" name="atividadesOutro" class="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outras (especifique)">
                 </div>
-              </div>
-            </DashboardCard>
 
-            {/* Rodapé do Relatório */}
-            <div className="flex justify-between items-center text-xs text-slate-400 pt-4 print:text-black">
-              <span>Gerado em: {new Date().toLocaleDateString()}</span>
-              <span>ID Sessão: {Math.random().toString(36).substr(2, 9).toUpperCase()}</span>
-            </div>
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Existem diferentes níveis de acesso necessários no sistema?</label>
+                    <div class="flex gap-6">
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="niveisAcesso" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="niveisAcesso" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="niveisAcesso" value="Não sei" class="w-4 h-4 text-blue-600"> <span>Não sei</span></label>
+                    </div>
+                </div>
 
-          </div>
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Descreva os pontos mais críticos do processo atual de compras e estoque.</label>
+                    <textarea name="pontosCriticos" rows="4" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta"></textarea>
+                </div>
+
+                <!-- SEÇÃO 3 -->
+                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
+                            <i data-lucide="package" class="w-6 h-6"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 3 — Requisitos Funcionais: Produtos / Estoque</h2>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Quais informações devem ser obrigatórias no cadastro de produtos?</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Nome do produto" class="w-4 h-4 rounded text-blue-600"> <span>Nome do produto</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Categoria" class="w-4 h-4 rounded text-blue-600"> <span>Categoria</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Unidade (UN, KG, CX etc.)" class="w-4 h-4 rounded text-blue-600"> <span>Unidade (UN, KG, CX etc.)</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Estoque mínimo" class="w-4 h-4 rounded text-blue-600"> <span>Estoque mínimo</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Preço unitário" class="w-4 h-4 rounded text-blue-600"> <span>Preço unitário</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Validade" class="w-4 h-4 rounded text-blue-600"> <span>Validade</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Fornecedor principal" class="w-4 h-4 rounded text-blue-600"> <span>Fornecedor principal</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Quantidade inicial" class="w-4 h-4 rounded text-blue-600"> <span>Quantidade inicial</span></label>
+                    </div>
+                    <input type="text" name="infoProdutoOutros" class="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outros (especifique)">
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">O sistema deve emitir alertas automáticos quando:</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="alertasAutomaticos" value="Produto atingir o estoque mínimo" class="w-4 h-4 rounded text-blue-600"> <span>Produto atingir o estoque mínimo</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="alertasAutomaticos" value="Produto estiver próximo da validade" class="w-4 h-4 rounded text-blue-600"> <span>Produto estiver próximo da validade</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="alertasAutomaticos" value="Produto estiver vencido" class="w-4 h-4 rounded text-blue-600"> <span>Produto estiver vencido</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="alertasAutomaticos" value="Houver inconsistências de estoque" class="w-4 h-4 rounded text-blue-600"> <span>Houver inconsistências de estoque</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="alertasAutomaticos" value="Não é necessário" class="w-4 h-4 rounded text-blue-600"> <span>Não é necessário</span></label>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">A equipe necessita registrar manualmente ajustes de estoque?</label>
+                    <div class="flex gap-6">
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="ajustesEstoque" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="ajustesEstoque" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="ajustesEstoque" value="Somente com justificativa" class="w-4 h-4 text-blue-600"> <span>Somente com justificativa</span></label>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO 4 -->
+                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
+                            <i data-lucide="arrow-right-left" class="w-6 h-6"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 4 — Requisitos Funcionais: Movimentações</h2>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Quais informações são obrigatórias ao registrar uma saída de estoque?</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoSaida" value="Produto" class="w-4 h-4 rounded text-blue-600"> <span>Produto</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoSaida" value="Quantidade" class="w-4 h-4 rounded text-blue-600"> <span>Quantidade</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoSaida" value="Data da retirada" class="w-4 h-4 rounded text-blue-600"> <span>Data da retirada</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoSaida" value="Responsável" class="w-4 h-4 rounded text-blue-600"> <span>Responsável</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoSaida" value="Destino / Centro de custo" class="w-4 h-4 rounded text-blue-600"> <span>Destino / Centro de custo</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoSaida" value="Observações" class="w-4 h-4 rounded text-blue-600"> <span>Observações</span></label>
+                    </div>
+                    <input type="text" name="infoSaidaOutro" class="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outro (especifique)">
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">O sistema deve impedir saída maior que o saldo disponível?</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 cursor-pointer"><input type="radio" name="impedirSaidaNegativa" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
+                        <label class="flex items-center gap-3 cursor-pointer"><input type="radio" name="impedirSaidaNegativa" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
+                        <label class="flex items-center gap-3 cursor-pointer"><input type="radio" name="impedirSaidaNegativa" value="Deve permitir, mas exigir justificativa" class="w-4 h-4 text-blue-600"> <span>Deve permitir, mas exigir justificativa</span></label>
+                    </div>
+                </div>
+
+                 <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Há necessidade de registrar entradas (compras) dentro do sistema?</label>
+                    <div class="flex gap-6">
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="registrarEntradas" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="registrarEntradas" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="registrarEntradas" value="Futuramente" class="w-4 h-4 text-blue-600"> <span>Futuramente</span></label>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO 5 -->
+                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
+                            <i data-lucide="truck" class="w-6 h-6"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 5 — Requisitos Funcionais: Fornecedores</h2>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Quais informações são essenciais no cadastro de fornecedores?</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoFornecedor" value="Nome/Razão social" class="w-4 h-4 rounded text-blue-600"> <span>Nome/Razão social</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoFornecedor" value="CNPJ" class="w-4 h-4 rounded text-blue-600"> <span>CNPJ</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoFornecedor" value="Contato" class="w-4 h-4 rounded text-blue-600"> <span>Contato</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoFornecedor" value="Avaliação de desempenho" class="w-4 h-4 rounded text-blue-600"> <span>Avaliação de desempenho</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoFornecedor" value="Prazo de entrega" class="w-4 h-4 rounded text-blue-600"> <span>Prazo de entrega</span></label>
+                    </div>
+                    <input type="text" name="infoFornecedorOutros" class="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outro (especifique)">
+                </div>
+
+                 <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">O sistema deve permitir avaliação de fornecedores?</label>
+                    <div class="flex gap-6">
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="avaliacaoFornecedor" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="avaliacaoFornecedor" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="avaliacaoFornecedor" value="Talvez" class="w-4 h-4 text-blue-600"> <span>Talvez</span></label>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO 6 -->
+                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
+                            <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 6 — Relatórios, Indicadores e Auditoria</h2>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Quais relatórios a equipe considera indispensáveis?</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="relatorios" value="Consumo por destino" class="w-4 h-4 rounded text-blue-600"> <span>Consumo por destino</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="relatorios" value="Histórico de saídas" class="w-4 h-4 rounded text-blue-600"> <span>Histórico de saídas</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="relatorios" value="Valor total em estoque" class="w-4 h-4 rounded text-blue-600"> <span>Valor total em estoque</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="relatorios" value="Itens vencendo" class="w-4 h-4 rounded text-blue-600"> <span>Itens vencendo</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="relatorios" value="Indicadores gráficos" class="w-4 h-4 rounded text-blue-600"> <span>Indicadores gráficos</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="relatorios" value="Exportação em PDF" class="w-4 h-4 rounded text-blue-600"> <span>Exportação em PDF</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="relatorios" value="Exportação em Excel" class="w-4 h-4 rounded text-blue-600"> <span>Exportação em Excel</span></label>
+                    </div>
+                </div>
+
+                 <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">O sistema deve registrar trilha de auditoria completa? (Ações de usuários)</label>
+                    <div class="flex gap-6">
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="trilhaAuditoria" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="trilhaAuditoria" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="trilhaAuditoria" value="Apenas para exclusões" class="w-4 h-4 text-blue-600"> <span>Apenas para exclusões</span></label>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO 7 -->
+                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
+                            <i data-lucide="shield-check" class="w-6 h-6"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 7 — Requisitos Não Funcionais</h2>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Qual nível de facilidade de uso é esperado do sistema? (1 = Muito difícil, 5 = Muito fácil)</label>
+                    <div class="flex items-center justify-between max-w-md mt-4">
+                        <span class="text-xs text-slate-500 font-bold">Muito difícil</span>
+                        <div class="flex gap-4">
+                            <label class="flex flex-col items-center cursor-pointer"><input type="radio" name="facilidadeUso" value="1" class="w-5 h-5 text-blue-600 mb-1"> <span class="text-sm font-medium text-slate-700">1</span></label>
+                            <label class="flex flex-col items-center cursor-pointer"><input type="radio" name="facilidadeUso" value="2" class="w-5 h-5 text-blue-600 mb-1"> <span class="text-sm font-medium text-slate-700">2</span></label>
+                            <label class="flex flex-col items-center cursor-pointer"><input type="radio" name="facilidadeUso" value="3" checked class="w-5 h-5 text-blue-600 mb-1"> <span class="text-sm font-medium text-slate-700">3</span></label>
+                            <label class="flex flex-col items-center cursor-pointer"><input type="radio" name="facilidadeUso" value="4" class="w-5 h-5 text-blue-600 mb-1"> <span class="text-sm font-medium text-slate-700">4</span></label>
+                            <label class="flex flex-col items-center cursor-pointer"><input type="radio" name="facilidadeUso" value="5" class="w-5 h-5 text-blue-600 mb-1"> <span class="text-sm font-medium text-slate-700">5</span></label>
+                        </div>
+                        <span class="text-xs text-slate-500 font-bold">Muito fácil</span>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">A responsividade (funcionar bem no celular) é obrigatória?</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 cursor-pointer"><input type="radio" name="responsividade" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
+                        <label class="flex items-center gap-3 cursor-pointer"><input type="radio" name="responsividade" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
+                        <label class="flex items-center gap-3 cursor-pointer"><input type="radio" name="responsividade" value="Desejável, mas não obrigatório" class="w-4 h-4 text-blue-600"> <span>Desejável, mas não obrigatório</span></label>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Quais níveis de segurança são essenciais?</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="seguranca" value="Login seguro" class="w-4 h-4 rounded text-blue-600"> <span>Login seguro</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="seguranca" value="Permissões por usuário" class="w-4 h-4 rounded text-blue-600"> <span>Permissões por usuário</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="seguranca" value="Criptografia de dados" class="w-4 h-4 rounded text-blue-600"> <span>Criptografia de dados</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="seguranca" value="Registro de ações" class="w-4 h-4 rounded text-blue-600"> <span>Registro de ações</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="seguranca" value="Controle de acesso a módulos" class="w-4 h-4 rounded text-blue-600"> <span>Controle de acesso a módulos</span></label>
+                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="seguranca" value="Não sei dizer" class="w-4 h-4 rounded text-blue-600"> <span>Não sei dizer</span></label>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Qual a disponibilidade desejada para o sistema?</label>
+                    <div class="flex gap-6 flex-wrap">
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="disponibilidade" value="24/7" class="w-4 h-4 text-blue-600"> <span>24/7</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="disponibilidade" value="Horário comercial" class="w-4 h-4 text-blue-600"> <span>Horário comercial</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="disponibilidade" value="Sem exigência específica" class="w-4 h-4 text-blue-600"> <span>Sem exigência específica</span></label>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO 8 -->
+                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
+                            <i data-lucide="file-text" class="w-6 h-6"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 8 — Expectativas, Regras e Conformidade</h2>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Quais ações do sistema devem exigir aprovação de um gestor?</label>
+                    <textarea name="aprovacaoGestor" rows="3" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Compras acima de R$ 5.000,00"></textarea>
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Existem normas internas ou legislações que o sistema deve obedecer? (Ex.: LGPD)</label>
+                    <textarea name="normasLegisla" rows="3" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta"></textarea>
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Quais melhorias a equipe espera alcançar com o novo sistema?</label>
+                    <textarea name="expectativasMelhoria" rows="3" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Redução de perdas, agilidade na compra..."></textarea>
+                </div>
+
+                <!-- SEÇÃO 9 -->
+                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
+                            <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 9 — Validação Final</h2>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Em sua visão, quais são as três prioridades principais para o desenvolvimento do sistema?</label>
+                    <input type="text" name="prioridades" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="1. ..., 2. ..., 3. ...">
+                </div>
+
+                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
+                    <label class="block text-slate-700 font-semibold mb-3">Deseja participar das validações futuras do sistema?</label>
+                    <div class="flex gap-6">
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="participarValidacao" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="participarValidacao" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="participarValidacao" value="Talvez" class="w-4 h-4 text-blue-600"> <span>Talvez</span></label>
+                    </div>
+                </div>
+
+                <!-- FOOTER / BOTÕES -->
+                <div class="mt-12 mb-20 flex justify-end items-center gap-4 pt-6 border-t border-slate-200 print:hidden">
+                    <button type="button" onclick="window.print()" class="px-6 py-3 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Imprimir em Branco
+                    </button>
+                    <button type="submit" class="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all flex items-center gap-2">
+                        <i data-lucide="save" class="w-4 h-4"></i> Enviar Respostas
+                    </button>
+                </div>
+            </form>
         </main>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-slate-50 pb-12 print:bg-white">
-      {/* Header */}
-      <header className="bg-blue-900 text-white py-8 px-6 shadow-lg print:bg-white print:text-black print:border-b-2 print:border-black">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-4 mb-4">
-            <ClipboardList size={40} className="text-blue-300 print:text-black" />
-            <h1 className="text-3xl font-bold">Levantamento de Requisitos</h1>
-          </div>
-          <h2 className="text-xl text-blue-100 mb-2 font-light print:text-black">Sistema de Gestão de Compras, Estoque e Fornecedores</h2>
-          <p className="opacity-80 max-w-2xl text-sm leading-relaxed print:text-black">
-            Este formulário tem como objetivo coletar informações técnicas, operacionais e estratégicas junto à equipe de compras, a fim de identificar necessidades para o desenvolvimento do novo sistema.
-          </p>
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-6 -mt-6 print:mt-0 print:px-0">
-        <form onSubmit={handleSubmit} className="space-y-2">
-          
-          {/* SEÇÃO 1 */}
-          <SectionHeader icon={User} title="Seção 1 — Identificação do Respondente" />
-          
-          <QuestionBlock label="Nome completo" required>
-            <input 
-              type="text" name="nome" value={formData.nome} onChange={handleInputChange} required
-              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta"
-            />
-          </QuestionBlock>
-
-          <QuestionBlock label="Cargo/Função na área de compras" required>
-            <input 
-              type="text" name="cargo" value={formData.cargo} onChange={handleInputChange} required
-              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta"
-            />
-          </QuestionBlock>
-
-          <QuestionBlock label="Tempo de atuação na área">
-            <div className="space-y-2">
-              {['Menos de 1 ano', '1 a 3 anos', '3 a 5 anos', 'Mais de 5 anos'].map((opt) => (
-                <label key={opt} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded">
-                  <input type="radio" name="tempoAtuacao" value={opt} checked={formData.tempoAtuacao === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
-                  <span className="text-slate-700">{opt}</span>
-                </label>
-              ))}
-            </div>
-          </QuestionBlock>
-
-          {/* SEÇÃO 2 */}
-          <SectionHeader icon={ShoppingCart} title="Seção 2 — Caracterização da Operação" />
-
-          <QuestionBlock label="Quais atividades você executa diretamente?">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {['Solicitação de compras', 'Análise de cotações', 'Emissão de ordens de compra', 'Controle de estoque', 'Avaliação de fornecedores', 'Registro de saídas/consumo'].map((item) => (
-                <label key={item} className="flex items-center gap-3 p-2 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer">
-                  <input type="checkbox" value={item} checked={formData.atividades.includes(item)} onChange={(e) => handleCheckboxChange(e, 'atividades')} className="w-4 h-4 rounded text-blue-600" />
-                  <span className="text-slate-700">{item}</span>
-                </label>
-              ))}
-            </div>
-            <input 
-              type="text" name="atividadesOutro" value={formData.atividadesOutro} onChange={handleInputChange}
-              className="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outras (especifique)"
-            />
-          </QuestionBlock>
-
-          <QuestionBlock label="Existem diferentes níveis de acesso necessários no sistema?">
-            <div className="flex gap-6">
-              {['Sim', 'Não', 'Não sei'].map((opt) => (
-                <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="niveisAcesso" value={opt} checked={formData.niveisAcesso === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
-                  <span>{opt}</span>
-                </label>
-              ))}
-            </div>
-          </QuestionBlock>
-
-          <QuestionBlock label="Descreva os pontos mais críticos do processo atual de compras e estoque.">
-            <textarea 
-              name="pontosCriticos" value={formData.pontosCriticos} onChange={handleInputChange} rows={4}
-              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta"
-            />
-          </QuestionBlock>
-
-          {/* SEÇÃO 3 */}
-          <SectionHeader icon={Package} title="Seção 3 — Requisitos Funcionais: Produtos / Estoque" />
-
-          <QuestionBlock label="Quais informações devem ser obrigatórias no cadastro de produtos?">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {['Nome do produto', 'Categoria', 'Unidade (UN, KG, CX etc.)', 'Estoque mínimo', 'Preço unitário', 'Validade', 'Fornecedor principal', 'Quantidade inicial'].map((item) => (
-                <label key={item} className="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50">
-                  <input type="checkbox" value={item} checked={formData.infoProduto.includes(item)} onChange={(e) => handleCheckboxChange(e, 'infoProduto')} className="w-4 h-4 rounded text-blue-600" />
-                  <span className="text-slate-700">{item}</span>
-                </label>
-              ))}
-            </div>
-            <input 
-              type="text" name="infoProdutoOutros" value={formData.infoProdutoOutros} onChange={handleInputChange}
-              className="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outros (especifique)"
-            />
-          </QuestionBlock>
-
-          <QuestionBlock label="O sistema deve emitir alertas automáticos quando:">
-            <div className="space-y-2">
-              {['Produto atingir o estoque mínimo', 'Produto estiver próximo da validade', 'Produto estiver vencido', 'Houver inconsistências de estoque', 'Não é necessário'].map((item) => (
-                <label key={item} className="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50">
-                  <input type="checkbox" value={item} checked={formData.alertasAutomaticos.includes(item)} onChange={(e) => handleCheckboxChange(e, 'alertasAutomaticos')} className="w-4 h-4 rounded text-blue-600" />
-                  <span className="text-slate-700">{item}</span>
-                </label>
-              ))}
-            </div>
-          </QuestionBlock>
-
-          <QuestionBlock label="A equipe necessita registrar manualmente ajustes de estoque?">
-            <div className="flex gap-6">
-              {['Sim', 'Não', 'Somente com justificativa'].map((opt) => (
-                <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="ajustesEstoque" value={opt} checked={formData.ajustesEstoque === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
-                  <span>{opt}</span>
-                </label>
-              ))}
-            </div>
-          </QuestionBlock>
-
-          {/* SEÇÃO 4 */}
-          <SectionHeader icon={ArrowRightLeft} title="Seção 4 — Requisitos Funcionais: Movimentações" />
-
-          <QuestionBlock label="Quais informações são obrigatórias ao registrar uma saída de estoque?">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {['Produto', 'Quantidade', 'Data da retirada', 'Responsável', 'Destino / Centro de custo', 'Observações'].map((item) => (
-                <label key={item} className="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50">
-                  <input type="checkbox" value={item} checked={formData.infoSaida.includes(item)} onChange={(e) => handleCheckboxChange(e, 'infoSaida')} className="w-4 h-4 rounded text-blue-600" />
-                  <span className="text-slate-700">{item}</span>
-                </label>
-              ))}
-            </div>
-             <input 
-              type="text" name="infoSaidaOutro" value={formData.infoSaidaOutro} onChange={handleInputChange}
-              className="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outro (especifique)"
-            />
-          </QuestionBlock>
-
-          <QuestionBlock label="O sistema deve impedir saída maior que o saldo disponível?">
-            <div className="space-y-2">
-              {['Sim', 'Não', 'Deve permitir, mas exigir justificativa'].map((opt) => (
-                <label key={opt} className="flex items-center gap-3 cursor-pointer">
-                  <input type="radio" name="impedirSaidaNegativa" value={opt} checked={formData.impedirSaidaNegativa === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
-                  <span>{opt}</span>
-                </label>
-              ))}
-            </div>
-          </QuestionBlock>
-          
-           <QuestionBlock label="Há necessidade de registrar entradas (compras) dentro do sistema?">
-            <div className="flex gap-6">
-              {['Sim', 'Não', 'Futuramente'].map((opt) => (
-                <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="registrarEntradas" value={opt} checked={formData.registrarEntradas === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
-                  <span>{opt}</span>
-                </label>
-              ))}
-            </div>
-          </QuestionBlock>
-
-          {/* SEÇÃO 5 */}
-          <SectionHeader icon={Truck} title="Seção 5 — Requisitos Funcionais: Fornecedores" />
-          
-          <QuestionBlock label="Quais informações são essenciais no cadastro de fornecedores?">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {['Nome/Razão social', 'CNPJ', 'Contato', 'Avaliação de desempenho', 'Prazo de entrega'].map((item) => (
-                <label key={item} className="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50">
-                  <input type="checkbox" value={item} checked={formData.infoFornecedor.includes(item)} onChange={(e) => handleCheckboxChange(e, 'infoFornecedor')} className="w-4 h-4 rounded text-blue-600" />
-                  <span className="text-slate-700">{item}</span>
-                </label>
-              ))}
-            </div>
-             <input 
-              type="text" name="infoFornecedorOutros" value={formData.infoFornecedorOutros} onChange={handleInputChange}
-              className="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outro (especifique)"
-            />
-          </QuestionBlock>
-
-          <QuestionBlock label="O sistema deve permitir avaliação de fornecedores?">
-             <div className="flex gap-6">
-              {['Sim', 'Não', 'Talvez'].map((opt) => (
-                <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="avaliacaoFornecedor" value={opt} checked={formData.avaliacaoFornecedor === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
-                  <span>{opt}</span>
-                </label>
-              ))}
-            </div>
-          </QuestionBlock>
-
-          {/* SEÇÃO 6 */}
-          <SectionHeader icon={BarChart3} title="Seção 6 — Relatórios, Indicadores e Auditoria" />
-          
-          <QuestionBlock label="Quais relatórios a equipe considera indispensáveis?">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {['Consumo por destino', 'Histórico de saídas', 'Valor total em estoque', 'Itens vencendo', 'Indicadores gráficos', 'Exportação em PDF', 'Exportação em Excel'].map((item) => (
-                <label key={item} className="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50">
-                  <input type="checkbox" value={item} checked={formData.relatorios.includes(item)} onChange={(e) => handleCheckboxChange(e, 'relatorios')} className="w-4 h-4 rounded text-blue-600" />
-                  <span className="text-slate-700">{item}</span>
-                </label>
-              ))}
-            </div>
-          </QuestionBlock>
-
-           <QuestionBlock label="O sistema deve registrar trilha de auditoria completa? (Ações de usuários)">
-             <div className="flex gap-6">
-              {['Sim', 'Não', 'Apenas para exclusões'].map((opt) => (
-                <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="trilhaAuditoria" value={opt} checked={formData.trilhaAuditoria === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
-                  <span>{opt}</span>
-                </label>
-              ))}
-            </div>
-          </QuestionBlock>
-
-          {/* SEÇÃO 7 */}
-          <SectionHeader icon={ShieldCheck} title="Seção 7 — Requisitos Não Funcionais" />
-
-          <QuestionBlock label="Qual nível de facilidade de uso é esperado do sistema? (1 = Muito difícil, 5 = Muito fácil)">
-            <div className="flex items-center justify-between max-w-md mt-4">
-              <span className="text-xs text-slate-500 font-bold">Muito difícil</span>
-              <div className="flex gap-4">
-                {[1, 2, 3, 4, 5].map((val) => (
-                  <label key={val} className="flex flex-col items-center cursor-pointer">
-                    <input 
-                      type="radio" name="facilidadeUso" value={val} 
-                      checked={parseInt(formData.facilidadeUso) === val} 
-                      onChange={handleInputChange} 
-                      className="w-5 h-5 text-blue-600 mb-1" 
-                    />
-                    <span className="text-sm font-medium text-slate-700">{val}</span>
-                  </label>
-                ))}
-              </div>
-              <span className="text-xs text-slate-500 font-bold">Muito fácil</span>
-            </div>
-          </QuestionBlock>
-
-          <QuestionBlock label="A responsividade (funcionar bem no celular) é obrigatória?">
-            <div className="space-y-2">
-              {['Sim', 'Não', 'Desejável, mas não obrigatório'].map((opt) => (
-                <label key={opt} className="flex items-center gap-3 cursor-pointer">
-                  <input type="radio" name="responsividade" value={opt} checked={formData.responsividade === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
-                  <span>{opt}</span>
-                </label>
-              ))}
-            </div>
-          </QuestionBlock>
-
-          <QuestionBlock label="Quais níveis de segurança são essenciais?">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {['Login seguro', 'Permissões por usuário', 'Criptografia de dados', 'Registro de ações', 'Controle de acesso a módulos', 'Não sei dizer'].map((item) => (
-                <label key={item} className="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50">
-                  <input type="checkbox" value={item} checked={formData.seguranca.includes(item)} onChange={(e) => handleCheckboxChange(e, 'seguranca')} className="w-4 h-4 rounded text-blue-600" />
-                  <span className="text-slate-700">{item}</span>
-                </label>
-              ))}
-            </div>
-          </QuestionBlock>
-
-          <QuestionBlock label="Qual a disponibilidade desejada para o sistema?">
-             <div className="flex gap-6 flex-wrap">
-              {['24/7', 'Horário comercial', 'Sem exigência específica'].map((opt) => (
-                <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="disponibilidade" value={opt} checked={formData.disponibilidade === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
-                  <span>{opt}</span>
-                </label>
-              ))}
-            </div>
-          </QuestionBlock>
-
-          {/* SEÇÃO 8 */}
-          <SectionHeader icon={FileText} title="Seção 8 — Expectativas, Regras e Conformidade" />
-
-          <QuestionBlock label="Quais ações do sistema devem exigir aprovação de um gestor?">
-             <textarea 
-              name="aprovacaoGestor" value={formData.aprovacaoGestor} onChange={handleInputChange} rows={3}
-              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Compras acima de R$ 5.000,00"
-            />
-          </QuestionBlock>
-          
-          <QuestionBlock label="Existem normas internas ou legislações que o sistema deve obedecer? (Ex.: LGPD)">
-             <textarea 
-              name="normasLegisla" value={formData.normasLegisla} onChange={handleInputChange} rows={3}
-              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta"
-            />
-          </QuestionBlock>
-          
-          <QuestionBlock label="Quais melhorias a equipe espera alcançar com o novo sistema?">
-             <textarea 
-              name="expectativasMelhoria" value={formData.expectativasMelhoria} onChange={handleInputChange} rows={3}
-              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Redução de perdas, agilidade na compra..."
-            />
-          </QuestionBlock>
-
-          {/* SEÇÃO 9 */}
-          <SectionHeader icon={CheckCircle2} title="Seção 9 — Validação Final" />
-
-          <QuestionBlock label="Em sua visão, quais são as três prioridades principais para o desenvolvimento do sistema?">
-             <input 
-              type="text" name="prioridades" value={formData.prioridades} onChange={handleInputChange}
-              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="1. ..., 2. ..., 3. ..."
-            />
-          </QuestionBlock>
-
-          <QuestionBlock label="Deseja participar das validações futuras do sistema?">
-            <div className="flex gap-6">
-              {['Sim', 'Não', 'Talvez'].map((opt) => (
-                <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="participarValidacao" value={opt} checked={formData.participarValidacao === opt} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
-                  <span>{opt}</span>
-                </label>
-              ))}
-            </div>
-          </QuestionBlock>
-
-          {/* Footer Actions */}
-          <div className="mt-12 mb-20 flex justify-end items-center gap-4 pt-6 border-t border-slate-200 print:hidden">
-            <button 
-              type="button" 
-              onClick={handlePrint}
-              className="px-6 py-3 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
-            >
-              <Printer size={18} /> Imprimir em Branco
-            </button>
-            <button 
-              type="submit" 
-              className="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all flex items-center gap-2"
-            >
-              <Save size={18} /> Enviar Respostas
-            </button>
-          </div>
-
-        </form>
-      </main>
     </div>
-  );
-};
 
-export default SurveyForm;
+    <!-- VIEW: DASHBOARD (Inicialmente Escondido) -->
+    <div id="dashboard-view" class="hidden">
+        <!-- Dashboard Header -->
+        <header class="bg-slate-900 text-white py-8 px-6 shadow-md print:bg-white print:text-black print:border-b-2">
+            <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <div class="flex items-center gap-3 mb-1">
+                        <i data-lucide="layout-dashboard" class="w-6 h-6 text-blue-400 print:text-black"></i>
+                        <h1 class="text-2xl font-bold">Dashboard de Requisitos</h1>
+                    </div>
+                    <p class="text-slate-400 text-sm print:text-slate-600">Visualização consolidada das respostas do levantamento</p>
+                </div>
+                <div class="flex gap-3 print:hidden">
+                    <button id="btn-edit" class="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors text-sm font-medium">
+                        Editar
+                    </button>
+                    <button onclick="window.print()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium shadow-sm">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Imprimir / PDF
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main id="dashboard-content" class="max-w-6xl mx-auto px-6 mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 print:px-0 print:block">
+            <!-- Conteúdo será injetado via JS -->
+        </main>
+    </div>
+
+    <!-- SCRIPT DE LÓGICA -->
+    <script>
+        // Inicializa ícones do Lucide ao carregar
+        lucide.createIcons();
+
+        // Elementos
+        const formView = document.getElementById('form-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        const form = document.getElementById('requirementsForm');
+        const dashboardContent = document.getElementById('dashboard-content');
+        const btnEdit = document.getElementById('btn-edit');
+
+        // Estado inicial
+        let formData = {
+            atividades: [],
+            infoProduto: [],
+            alertasAutomaticos: [],
+            infoSaida: [],
+            infoFornecedor: [],
+            relatorios: [],
+            seguranca: [],
+            // Campos de texto e rádio serão preenchidos dinamicamente
+        };
+
+        // Escuta o envio do formulário
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Coleta dados
+            const data = new FormData(form);
+            
+            // Atualiza objeto de estado
+            // Resetar arrays para evitar duplicação em re-submissão
+            formData.atividades = data.getAll('atividades');
+            formData.infoProduto = data.getAll('infoProduto');
+            formData.alertasAutomaticos = data.getAll('alertasAutomaticos');
+            formData.infoSaida = data.getAll('infoSaida');
+            formData.infoFornecedor = data.getAll('infoFornecedor');
+            formData.relatorios = data.getAll('relatorios');
+            formData.seguranca = data.getAll('seguranca');
+            
+            // Campos simples
+            formData.nome = data.get('nome');
+            formData.cargo = data.get('cargo');
+            formData.tempoAtuacao = data.get('tempoAtuacao');
+            formData.atividadesOutro = data.get('atividadesOutro');
+            formData.pontosCriticos = data.get('pontosCriticos');
+            formData.facilidadeUso = data.get('facilidadeUso') || 3;
+            formData.trilhaAuditoria = data.get('trilhaAuditoria');
+            formData.prioridades = data.get('prioridades');
+            formData.expectativasMelhoria = data.get('expectativasMelhoria');
+            
+            // Renderiza e mostra dashboard
+            renderDashboard();
+            toggleView(true);
+            window.scrollTo(0, 0);
+        });
+
+        // Botão de editar
+        btnEdit.addEventListener('click', function() {
+            toggleView(false);
+            window.scrollTo(0, 0);
+        });
+
+        function toggleView(showDashboard) {
+            if (showDashboard) {
+                formView.classList.add('hidden');
+                dashboardView.classList.remove('hidden');
+            } else {
+                formView.classList.remove('hidden');
+                dashboardView.classList.add('hidden');
+            }
+        }
+
+        function renderDashboard() {
+            // Lógica de cores da barra de facilidade
+            const score = parseInt(formData.facilidadeUso);
+            let barColor = 'bg-red-500';
+            let uxText = "Foco funcional com curva de aprendizado aceitável.";
+            if (score >= 4) {
+                barColor = 'bg-green-500';
+                uxText = "Alta exigência de usabilidade e intuitividade.";
+            } else if (score === 3) {
+                barColor = 'bg-yellow-500';
+            }
+
+            // HTML dos Tags
+            const createTags = (arr, colorClass = "bg-blue-100 text-blue-800") => {
+                if (!arr || arr.length === 0) return '<span class="text-slate-400 text-sm">Nenhum selecionado.</span>';
+                return arr.map(item => 
+                    `<span class="px-2 py-1 rounded-md text-xs font-medium ${colorClass} mr-2 mb-2 inline-block border border-transparent">${item}</span>`
+                ).join('');
+            };
+
+            // HTML da lista de atividades
+            const createList = (arr, outro) => {
+                let html = '<ul class="space-y-2 text-sm text-slate-700">';
+                if (arr.length > 0) {
+                    html += arr.map(item => 
+                        `<li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>${item}</li>`
+                    ).join('');
+                } else {
+                    html += '<li class="text-slate-400">Nenhuma atividade selecionada</li>';
+                }
+                if (outro) {
+                    html += `<li class="flex items-center gap-2 font-medium text-blue-700"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>${outro}</li>`;
+                }
+                html += '</ul>';
+                return html;
+            };
+
+            const html = `
+                <!-- Coluna 1 -->
+                <div class="space-y-6 print:mb-6 print:break-inside-avoid">
+                    
+                    <!-- Card Perfil -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-t-4 border-t-blue-500 print:border print:shadow-none">
+                        <div class="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2">
+                            <i data-lucide="user" class="w-4 h-4"></i> Perfil do Respondente
+                        </div>
+                        <div class="text-center md:text-left">
+                            <h3 class="text-xl font-bold text-slate-800">${formData.nome || "Não informado"}</h3>
+                            <p class="text-blue-600 font-medium">${formData.cargo || "Cargo não informado"}</p>
+                            <div class="flex items-center justify-center md:justify-start gap-2 mt-3 text-slate-500 text-sm">
+                                <i data-lucide="clock" class="w-3 h-3"></i>
+                                <span>Experiência: ${formData.tempoAtuacao || "-"}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card UX -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:border print:shadow-none">
+                        <div class="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2">
+                            <i data-lucide="activity" class="w-4 h-4"></i> Expectativa de UX
+                        </div>
+                        <div class="flex items-end gap-2 mb-2">
+                            <span class="text-4xl font-bold text-slate-800">${score}</span>
+                            <span class="text-slate-400 mb-1">/ 5</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-2.5 mb-2">
+                            <div class="h-2.5 rounded-full ${barColor}" style="width: ${(score/5)*100}%"></div>
+                        </div>
+                        <p class="text-xs text-slate-500">${uxText}</p>
+                    </div>
+
+                    <!-- Card Segurança -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:border print:shadow-none">
+                        <div class="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2">
+                            <i data-lucide="shield-check" class="w-4 h-4"></i> Segurança Exigida
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            ${createTags(formData.seguranca, "bg-red-50 text-red-700 border border-red-100")}
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-sm">
+                            <span class="text-slate-600">Auditoria Completa?</span>
+                            <span class="font-bold ${formData.trilhaAuditoria === 'Sim' ? 'text-green-600' : 'text-slate-500'}">
+                                ${formData.trilhaAuditoria || "-"}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coluna 2 -->
+                <div class="space-y-6 md:col-span-2 print:mb-6">
+                    
+                    <!-- Card Pontos Críticos -->
+                    <div class="bg-orange-50 p-6 rounded-xl shadow-sm border border-orange-200 print:border print:shadow-none">
+                        <div class="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2 border-orange-200">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Pontos Críticos & Dores
+                        </div>
+                        <div class="relative pl-4 border-l-4 border-orange-300">
+                            <p class="text-slate-700 italic text-sm md:text-base">
+                                "${formData.pontosCriticos || "Nenhum ponto crítico descrito."}"
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 print:block print:space-y-6">
+                        <!-- Card Escopo -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:border print:shadow-none">
+                            <div class="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2">
+                                <i data-lucide="check-circle-2" class="w-4 h-4"></i> Escopo Operacional
+                            </div>
+                            ${createList(formData.atividades, formData.atividadesOutro)}
+                        </div>
+
+                        <!-- Card Dados -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:border print:shadow-none">
+                            <div class="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2">
+                                <i data-lucide="file-text" class="w-4 h-4"></i> Requisitos de Dados
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-400 mb-2 uppercase">Produto</h4>
+                                    <div class="flex flex-wrap">
+                                        ${createTags(formData.infoProduto.slice(0, 5))}
+                                        ${formData.infoProduto.length > 5 ? `<span class="px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600 mr-2 mb-2 inline-block border border-transparent">+${formData.infoProduto.length - 5}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-400 mb-2 uppercase">Fornecedor</h4>
+                                    <div class="flex flex-wrap">
+                                        ${createTags(formData.infoFornecedor.slice(0, 3), "bg-purple-50 text-purple-700")}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Objetivos -->
+                    <div class="bg-gradient-to-r from-white to-blue-50 p-6 rounded-xl shadow-sm border border-slate-200 print:border print:shadow-none">
+                        <div class="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2">
+                            <i data-lucide="target" class="w-4 h-4"></i> Objetivos Estratégicos
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="text-sm font-bold text-blue-900 mb-2">Principais Prioridades</h4>
+                                <p class="text-slate-700 text-sm bg-white p-3 rounded border border-blue-100 shadow-sm">
+                                    ${formData.prioridades || "Não informado"}
+                                </p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-green-900 mb-2">Melhoria Esperada</h4>
+                                <p class="text-slate-700 text-sm bg-white p-3 rounded border border-green-100 shadow-sm">
+                                    ${formData.expectativasMelhoria || "Não informado"}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="flex justify-between items-center text-xs text-slate-400 pt-4 print:text-black">
+                        <span>Gerado em: ${new Date().toLocaleDateString()}</span>
+                        <span>ID Sessão: ${Math.random().toString(36).substr(2, 9).toUpperCase()}</span>
+                    </div>
+                </div>
+            `;
+
+            dashboardContent.innerHTML = html;
+            // Re-renderiza ícones no novo conteúdo inserido
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
