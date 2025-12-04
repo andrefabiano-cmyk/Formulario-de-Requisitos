@@ -3,666 +3,1432 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Levantamento de Requisitos - Sistema de Gestão</title>
+    <title>Estoque Inteligente</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Babel para JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Fontes (Opcional, para melhor estética) -->
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        
-        @media print {
-            .no-print { display: none !important; }
-            .print-break-avoid { break-inside: avoid; }
-            .print-block { display: block !important; }
-            .print-mt-6 { margin-top: 1.5rem !important; }
-            body { background-color: white; }
-        }
-    </style>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a' },
-                        blue: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a' }
-                    }
-                }
-            }
-        }
+    <!-- Import Map para gerenciar dependências como módulos -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.309.0",
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+      }
+    }
     </script>
+
+    <style>
+        /* Animações personalizadas do Tailwind não incluídas no CDN padrão */
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes zoom-in-95 {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes slide-in-from-bottom-4 {
+            from { transform: translateY(1rem); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-in { animation-duration: 0.2s; animation-fill-mode: forwards; }
+        .fade-in { animation-name: fade-in; }
+        .zoom-in-95 { animation-name: zoom-in-95; }
+        .slide-in-from-bottom-4 { animation-name: slide-in-from-bottom-4; }
+        
+        /* Ajuste para scrollbar bonita */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
 </head>
-<body class="bg-slate-50 min-h-screen pb-12 text-slate-800">
+<body class="bg-slate-50 text-slate-800 font-sans">
+    <div id="root"></div>
 
-    <!-- VIEW: FORMULÁRIO -->
-    <div id="form-view">
-        <!-- Header -->
-        <header class="bg-blue-900 text-white py-8 px-6 shadow-lg print:bg-white print:text-black print:border-b-2 print:border-black">
-            <div class="max-w-4xl mx-auto">
-                <div class="flex items-center gap-4 mb-4">
-                    <i data-lucide="clipboard-list" class="w-10 h-10 text-blue-300 print:text-black"></i>
-                    <h1 class="text-3xl font-bold">Levantamento de Requisitos</h1>
-                </div>
-                <h2 class="text-xl text-blue-100 mb-2 font-light print:text-black">Sistema de Gestão de Compras, Estoque e Fornecedores</h2>
-                <p class="opacity-80 max-w-2xl text-sm leading-relaxed print:text-black">
-                    Este formulário tem como objetivo coletar informações técnicas, operacionais e estratégicas junto à equipe de compras, a fim de identificar necessidades para o desenvolvimento do novo sistema.
-                </p>
-            </div>
-        </header>
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useMemo, useRef } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+          LayoutDashboard, Package, Users, ArrowUpRight, Search, Plus, Trash2, Edit, 
+          AlertTriangle, TrendingUp, Calendar, X, CheckCircle, Truck, Menu, LogOut, 
+          ChevronRight, Filter, MessageCircle, Send, Loader2, Bot, Sparkles, AlertCircle, 
+          Settings, User, Lock, LogIn, Eye, EyeOff, ShieldAlert
+        } from 'lucide-react';
+        import { initializeApp } from "firebase/app";
+        import { 
+          getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut 
+        } from "firebase/auth";
+        import { 
+          getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, 
+          query, orderBy, serverTimestamp, Timestamp, setDoc
+        } from "firebase/firestore";
 
-        <main class="max-w-4xl mx-auto px-6 -mt-6 print:mt-0 print:px-0 relative z-10">
-            <form id="requirementsForm" class="space-y-2">
-                
-                <!-- SEÇÃO 1 -->
-                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
-                            <i data-lucide="user" class="w-6 h-6"></i>
-                        </div>
-                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 1 — Identificação do Respondente</h2>
-                    </div>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Nome completo <span class="text-red-500">*</span></label>
-                    <input type="text" name="nome" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta">
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Cargo/Função na área de compras <span class="text-red-500">*</span></label>
-                    <input type="text" name="cargo" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta">
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Tempo de atuação na área</label>
-                    <div class="space-y-2">
-                        <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded"><input type="radio" name="tempoAtuacao" value="Menos de 1 ano" class="w-4 h-4 text-blue-600"> <span class="text-slate-700">Menos de 1 ano</span></label>
-                        <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded"><input type="radio" name="tempoAtuacao" value="1 a 3 anos" class="w-4 h-4 text-blue-600"> <span class="text-slate-700">1 a 3 anos</span></label>
-                        <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded"><input type="radio" name="tempoAtuacao" value="3 a 5 anos" class="w-4 h-4 text-blue-600"> <span class="text-slate-700">3 a 5 anos</span></label>
-                        <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded"><input type="radio" name="tempoAtuacao" value="Mais de 5 anos" class="w-4 h-4 text-blue-600"> <span class="text-slate-700">Mais de 5 anos</span></label>
-                    </div>
-                </div>
-
-                <!-- SEÇÃO 2 -->
-                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
-                            <i data-lucide="shopping-cart" class="w-6 h-6"></i>
-                        </div>
-                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 2 — Caracterização da Operação</h2>
-                    </div>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Quais atividades você executa diretamente?</label>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <label class="flex items-center gap-3 p-2 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer"><input type="checkbox" name="atividades" value="Solicitação de compras" class="w-4 h-4 rounded text-blue-600"> <span class="text-slate-700">Solicitação de compras</span></label>
-                        <label class="flex items-center gap-3 p-2 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer"><input type="checkbox" name="atividades" value="Análise de cotações" class="w-4 h-4 rounded text-blue-600"> <span class="text-slate-700">Análise de cotações</span></label>
-                        <label class="flex items-center gap-3 p-2 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer"><input type="checkbox" name="atividades" value="Emissão de ordens de compra" class="w-4 h-4 rounded text-blue-600"> <span class="text-slate-700">Emissão de ordens de compra</span></label>
-                        <label class="flex items-center gap-3 p-2 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer"><input type="checkbox" name="atividades" value="Controle de estoque" class="w-4 h-4 rounded text-blue-600"> <span class="text-slate-700">Controle de estoque</span></label>
-                        <label class="flex items-center gap-3 p-2 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer"><input type="checkbox" name="atividades" value="Avaliação de fornecedores" class="w-4 h-4 rounded text-blue-600"> <span class="text-slate-700">Avaliação de fornecedores</span></label>
-                        <label class="flex items-center gap-3 p-2 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer"><input type="checkbox" name="atividades" value="Registro de saídas/consumo" class="w-4 h-4 rounded text-blue-600"> <span class="text-slate-700">Registro de saídas/consumo</span></label>
-                    </div>
-                    <input type="text" name="atividadesOutro" class="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outras (especifique)">
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Existem diferentes níveis de acesso necessários no sistema?</label>
-                    <div class="flex gap-6">
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="niveisAcesso" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="niveisAcesso" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="niveisAcesso" value="Não sei" class="w-4 h-4 text-blue-600"> <span>Não sei</span></label>
-                    </div>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Descreva os pontos mais críticos do processo atual de compras e estoque.</label>
-                    <textarea name="pontosCriticos" rows="4" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta"></textarea>
-                </div>
-
-                <!-- SEÇÃO 3 -->
-                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
-                            <i data-lucide="package" class="w-6 h-6"></i>
-                        </div>
-                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 3 — Requisitos Funcionais: Produtos / Estoque</h2>
-                    </div>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Quais informações devem ser obrigatórias no cadastro de produtos?</label>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Nome do produto" class="w-4 h-4 rounded text-blue-600"> <span>Nome do produto</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Categoria" class="w-4 h-4 rounded text-blue-600"> <span>Categoria</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Unidade (UN, KG, CX etc.)" class="w-4 h-4 rounded text-blue-600"> <span>Unidade (UN, KG, CX etc.)</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Estoque mínimo" class="w-4 h-4 rounded text-blue-600"> <span>Estoque mínimo</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Preço unitário" class="w-4 h-4 rounded text-blue-600"> <span>Preço unitário</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Validade" class="w-4 h-4 rounded text-blue-600"> <span>Validade</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Fornecedor principal" class="w-4 h-4 rounded text-blue-600"> <span>Fornecedor principal</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoProduto" value="Quantidade inicial" class="w-4 h-4 rounded text-blue-600"> <span>Quantidade inicial</span></label>
-                    </div>
-                    <input type="text" name="infoProdutoOutros" class="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outros (especifique)">
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">O sistema deve emitir alertas automáticos quando:</label>
-                    <div class="space-y-2">
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="alertasAutomaticos" value="Produto atingir o estoque mínimo" class="w-4 h-4 rounded text-blue-600"> <span>Produto atingir o estoque mínimo</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="alertasAutomaticos" value="Produto estiver próximo da validade" class="w-4 h-4 rounded text-blue-600"> <span>Produto estiver próximo da validade</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="alertasAutomaticos" value="Produto estiver vencido" class="w-4 h-4 rounded text-blue-600"> <span>Produto estiver vencido</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="alertasAutomaticos" value="Houver inconsistências de estoque" class="w-4 h-4 rounded text-blue-600"> <span>Houver inconsistências de estoque</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="alertasAutomaticos" value="Não é necessário" class="w-4 h-4 rounded text-blue-600"> <span>Não é necessário</span></label>
-                    </div>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">A equipe necessita registrar manualmente ajustes de estoque?</label>
-                    <div class="flex gap-6">
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="ajustesEstoque" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="ajustesEstoque" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="ajustesEstoque" value="Somente com justificativa" class="w-4 h-4 text-blue-600"> <span>Somente com justificativa</span></label>
-                    </div>
-                </div>
-
-                <!-- SEÇÃO 4 -->
-                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
-                            <i data-lucide="arrow-right-left" class="w-6 h-6"></i>
-                        </div>
-                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 4 — Requisitos Funcionais: Movimentações</h2>
-                    </div>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Quais informações são obrigatórias ao registrar uma saída de estoque?</label>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoSaida" value="Produto" class="w-4 h-4 rounded text-blue-600"> <span>Produto</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoSaida" value="Quantidade" class="w-4 h-4 rounded text-blue-600"> <span>Quantidade</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoSaida" value="Data da retirada" class="w-4 h-4 rounded text-blue-600"> <span>Data da retirada</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoSaida" value="Responsável" class="w-4 h-4 rounded text-blue-600"> <span>Responsável</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoSaida" value="Destino / Centro de custo" class="w-4 h-4 rounded text-blue-600"> <span>Destino / Centro de custo</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoSaida" value="Observações" class="w-4 h-4 rounded text-blue-600"> <span>Observações</span></label>
-                    </div>
-                    <input type="text" name="infoSaidaOutro" class="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outro (especifique)">
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">O sistema deve impedir saída maior que o saldo disponível?</label>
-                    <div class="space-y-2">
-                        <label class="flex items-center gap-3 cursor-pointer"><input type="radio" name="impedirSaidaNegativa" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
-                        <label class="flex items-center gap-3 cursor-pointer"><input type="radio" name="impedirSaidaNegativa" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
-                        <label class="flex items-center gap-3 cursor-pointer"><input type="radio" name="impedirSaidaNegativa" value="Deve permitir, mas exigir justificativa" class="w-4 h-4 text-blue-600"> <span>Deve permitir, mas exigir justificativa</span></label>
-                    </div>
-                </div>
-
-                 <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Há necessidade de registrar entradas (compras) dentro do sistema?</label>
-                    <div class="flex gap-6">
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="registrarEntradas" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="registrarEntradas" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="registrarEntradas" value="Futuramente" class="w-4 h-4 text-blue-600"> <span>Futuramente</span></label>
-                    </div>
-                </div>
-
-                <!-- SEÇÃO 5 -->
-                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
-                            <i data-lucide="truck" class="w-6 h-6"></i>
-                        </div>
-                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 5 — Requisitos Funcionais: Fornecedores</h2>
-                    </div>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Quais informações são essenciais no cadastro de fornecedores?</label>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoFornecedor" value="Nome/Razão social" class="w-4 h-4 rounded text-blue-600"> <span>Nome/Razão social</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoFornecedor" value="CNPJ" class="w-4 h-4 rounded text-blue-600"> <span>CNPJ</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoFornecedor" value="Contato" class="w-4 h-4 rounded text-blue-600"> <span>Contato</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoFornecedor" value="Avaliação de desempenho" class="w-4 h-4 rounded text-blue-600"> <span>Avaliação de desempenho</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="infoFornecedor" value="Prazo de entrega" class="w-4 h-4 rounded text-blue-600"> <span>Prazo de entrega</span></label>
-                    </div>
-                    <input type="text" name="infoFornecedorOutros" class="mt-3 w-full p-2 border border-slate-300 rounded text-sm" placeholder="Outro (especifique)">
-                </div>
-
-                 <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">O sistema deve permitir avaliação de fornecedores?</label>
-                    <div class="flex gap-6">
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="avaliacaoFornecedor" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="avaliacaoFornecedor" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="avaliacaoFornecedor" value="Talvez" class="w-4 h-4 text-blue-600"> <span>Talvez</span></label>
-                    </div>
-                </div>
-
-                <!-- SEÇÃO 6 -->
-                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
-                            <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
-                        </div>
-                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 6 — Relatórios, Indicadores e Auditoria</h2>
-                    </div>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Quais relatórios a equipe considera indispensáveis?</label>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="relatorios" value="Consumo por destino" class="w-4 h-4 rounded text-blue-600"> <span>Consumo por destino</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="relatorios" value="Histórico de saídas" class="w-4 h-4 rounded text-blue-600"> <span>Histórico de saídas</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="relatorios" value="Valor total em estoque" class="w-4 h-4 rounded text-blue-600"> <span>Valor total em estoque</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="relatorios" value="Itens vencendo" class="w-4 h-4 rounded text-blue-600"> <span>Itens vencendo</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="relatorios" value="Indicadores gráficos" class="w-4 h-4 rounded text-blue-600"> <span>Indicadores gráficos</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="relatorios" value="Exportação em PDF" class="w-4 h-4 rounded text-blue-600"> <span>Exportação em PDF</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="relatorios" value="Exportação em Excel" class="w-4 h-4 rounded text-blue-600"> <span>Exportação em Excel</span></label>
-                    </div>
-                </div>
-
-                 <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">O sistema deve registrar trilha de auditoria completa? (Ações de usuários)</label>
-                    <div class="flex gap-6">
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="trilhaAuditoria" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="trilhaAuditoria" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="trilhaAuditoria" value="Apenas para exclusões" class="w-4 h-4 text-blue-600"> <span>Apenas para exclusões</span></label>
-                    </div>
-                </div>
-
-                <!-- SEÇÃO 7 -->
-                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
-                            <i data-lucide="shield-check" class="w-6 h-6"></i>
-                        </div>
-                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 7 — Requisitos Não Funcionais</h2>
-                    </div>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Qual nível de facilidade de uso é esperado do sistema? (1 = Muito difícil, 5 = Muito fácil)</label>
-                    <div class="flex items-center justify-between max-w-md mt-4">
-                        <span class="text-xs text-slate-500 font-bold">Muito difícil</span>
-                        <div class="flex gap-4">
-                            <label class="flex flex-col items-center cursor-pointer"><input type="radio" name="facilidadeUso" value="1" class="w-5 h-5 text-blue-600 mb-1"> <span class="text-sm font-medium text-slate-700">1</span></label>
-                            <label class="flex flex-col items-center cursor-pointer"><input type="radio" name="facilidadeUso" value="2" class="w-5 h-5 text-blue-600 mb-1"> <span class="text-sm font-medium text-slate-700">2</span></label>
-                            <label class="flex flex-col items-center cursor-pointer"><input type="radio" name="facilidadeUso" value="3" checked class="w-5 h-5 text-blue-600 mb-1"> <span class="text-sm font-medium text-slate-700">3</span></label>
-                            <label class="flex flex-col items-center cursor-pointer"><input type="radio" name="facilidadeUso" value="4" class="w-5 h-5 text-blue-600 mb-1"> <span class="text-sm font-medium text-slate-700">4</span></label>
-                            <label class="flex flex-col items-center cursor-pointer"><input type="radio" name="facilidadeUso" value="5" class="w-5 h-5 text-blue-600 mb-1"> <span class="text-sm font-medium text-slate-700">5</span></label>
-                        </div>
-                        <span class="text-xs text-slate-500 font-bold">Muito fácil</span>
-                    </div>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">A responsividade (funcionar bem no celular) é obrigatória?</label>
-                    <div class="space-y-2">
-                        <label class="flex items-center gap-3 cursor-pointer"><input type="radio" name="responsividade" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
-                        <label class="flex items-center gap-3 cursor-pointer"><input type="radio" name="responsividade" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
-                        <label class="flex items-center gap-3 cursor-pointer"><input type="radio" name="responsividade" value="Desejável, mas não obrigatório" class="w-4 h-4 text-blue-600"> <span>Desejável, mas não obrigatório</span></label>
-                    </div>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Quais níveis de segurança são essenciais?</label>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="seguranca" value="Login seguro" class="w-4 h-4 rounded text-blue-600"> <span>Login seguro</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="seguranca" value="Permissões por usuário" class="w-4 h-4 rounded text-blue-600"> <span>Permissões por usuário</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="seguranca" value="Criptografia de dados" class="w-4 h-4 rounded text-blue-600"> <span>Criptografia de dados</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="seguranca" value="Registro de ações" class="w-4 h-4 rounded text-blue-600"> <span>Registro de ações</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="seguranca" value="Controle de acesso a módulos" class="w-4 h-4 rounded text-blue-600"> <span>Controle de acesso a módulos</span></label>
-                        <label class="flex items-center gap-3 p-2 cursor-pointer hover:bg-slate-50"><input type="checkbox" name="seguranca" value="Não sei dizer" class="w-4 h-4 rounded text-blue-600"> <span>Não sei dizer</span></label>
-                    </div>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Qual a disponibilidade desejada para o sistema?</label>
-                    <div class="flex gap-6 flex-wrap">
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="disponibilidade" value="24/7" class="w-4 h-4 text-blue-600"> <span>24/7</span></label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="disponibilidade" value="Horário comercial" class="w-4 h-4 text-blue-600"> <span>Horário comercial</span></label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="disponibilidade" value="Sem exigência específica" class="w-4 h-4 text-blue-600"> <span>Sem exigência específica</span></label>
-                    </div>
-                </div>
-
-                <!-- SEÇÃO 8 -->
-                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
-                            <i data-lucide="file-text" class="w-6 h-6"></i>
-                        </div>
-                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 8 — Expectativas, Regras e Conformidade</h2>
-                    </div>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Quais ações do sistema devem exigir aprovação de um gestor?</label>
-                    <textarea name="aprovacaoGestor" rows="3" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Compras acima de R$ 5.000,00"></textarea>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Existem normas internas ou legislações que o sistema deve obedecer? (Ex.: LGPD)</label>
-                    <textarea name="normasLegisla" rows="3" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sua resposta"></textarea>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Quais melhorias a equipe espera alcançar com o novo sistema?</label>
-                    <textarea name="expectativasMelhoria" rows="3" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Redução de perdas, agilidade na compra..."></textarea>
-                </div>
-
-                <!-- SEÇÃO 9 -->
-                <div class="mb-6 border-b pb-4 border-slate-200 mt-10 print:mt-6 print:break-inside-avoid">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="p-2 bg-blue-100 rounded-lg text-blue-700 no-print">
-                            <i data-lucide="check-circle-2" class="w-6 h-6"></i>
-                        </div>
-                        <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Seção 9 — Validação Final</h2>
-                    </div>
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Em sua visão, quais são as três prioridades principais para o desenvolvimento do sistema?</label>
-                    <input type="text" name="prioridades" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="1. ..., 2. ..., 3. ...">
-                </div>
-
-                <div class="mb-6 bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border-none print:p-0 print:mb-4 print:break-inside-avoid">
-                    <label class="block text-slate-700 font-semibold mb-3">Deseja participar das validações futuras do sistema?</label>
-                    <div class="flex gap-6">
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="participarValidacao" value="Sim" class="w-4 h-4 text-blue-600"> <span>Sim</span></label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="participarValidacao" value="Não" class="w-4 h-4 text-blue-600"> <span>Não</span></label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="participarValidacao" value="Talvez" class="w-4 h-4 text-blue-600"> <span>Talvez</span></label>
-                    </div>
-                </div>
-
-                <!-- FOOTER / BOTÕES -->
-                <div class="mt-12 mb-20 flex justify-end items-center gap-4 pt-6 border-t border-slate-200 print:hidden">
-                    <button type="button" onclick="window.print()" class="px-6 py-3 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2">
-                        <i data-lucide="printer" class="w-4 h-4"></i> Imprimir em Branco
-                    </button>
-                    <button type="submit" class="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all flex items-center gap-2">
-                        <i data-lucide="save" class="w-4 h-4"></i> Enviar Respostas
-                    </button>
-                </div>
-            </form>
-        </main>
-    </div>
-
-    <!-- VIEW: DASHBOARD (Inicialmente Escondido) -->
-    <div id="dashboard-view" class="hidden">
-        <!-- Dashboard Header -->
-        <header class="bg-slate-900 text-white py-8 px-6 shadow-md print:bg-white print:text-black print:border-b-2">
-            <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-                <div>
-                    <div class="flex items-center gap-3 mb-1">
-                        <i data-lucide="layout-dashboard" class="w-6 h-6 text-blue-400 print:text-black"></i>
-                        <h1 class="text-2xl font-bold">Dashboard de Requisitos</h1>
-                    </div>
-                    <p class="text-slate-400 text-sm print:text-slate-600">Visualização consolidada das respostas do levantamento</p>
-                </div>
-                <div class="flex gap-3 print:hidden">
-                    <button id="btn-edit" class="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors text-sm font-medium">
-                        Editar
-                    </button>
-                    <button onclick="window.print()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium shadow-sm">
-                        <i data-lucide="printer" class="w-4 h-4"></i> Imprimir / PDF
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <main id="dashboard-content" class="max-w-6xl mx-auto px-6 mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 print:px-0 print:block">
-            <!-- Conteúdo será injetado via JS -->
-        </main>
-    </div>
-
-    <!-- SCRIPT DE LÓGICA -->
-    <script>
-        // Inicializa ícones do Lucide ao carregar
-        lucide.createIcons();
-
-        // Elementos
-        const formView = document.getElementById('form-view');
-        const dashboardView = document.getElementById('dashboard-view');
-        const form = document.getElementById('requirementsForm');
-        const dashboardContent = document.getElementById('dashboard-content');
-        const btnEdit = document.getElementById('btn-edit');
-
-        // Estado inicial
-        let formData = {
-            atividades: [],
-            infoProduto: [],
-            alertasAutomaticos: [],
-            infoSaida: [],
-            infoFornecedor: [],
-            relatorios: [],
-            seguranca: [],
-            // Campos de texto e rádio serão preenchidos dinamicamente
+        // --- Configuração Firebase ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyCyJ0128SDxcyGZ7uxt5bipCb8pLKRugIM",
+          authDomain: "gerenciador-inteligente.firebaseapp.com",
+          projectId: "gerenciador-inteligente",
+          storageBucket: "gerenciador-inteligente.firebasestorage.app",
+          messagingSenderId: "727482154028",
+          appId: "1:727482154028:web:b521b29c8d37e608b7e589"
         };
 
-        // Escuta o envio do formulário
-        form.addEventListener('submit', function(e) {
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // Em um ambiente HTML estático, não temos __app_id injetado, usamos um padrão
+        const appId = 'default-app-id';
+
+        // --- Componentes UI Auxiliares ---
+
+        const Card = ({ children, className = "" }) => (
+          <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>
+            {children}
+          </div>
+        );
+
+        // --- Componente de Erro de Autenticação ---
+        const AuthErrorScreen = ({ error }) => (
+          <div className="min-h-screen flex items-center justify-center bg-red-50 p-4">
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-lg border border-red-100">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 text-red-600">
+                  <ShieldAlert size={32} />
+                </div>
+                <h2 className="text-xl font-bold text-slate-800 mb-2">Erro de Autenticação</h2>
+                <p className="text-slate-600 text-sm mb-6">
+                  Não foi possível conectar ao projeto Firebase <strong>gerenciador-inteligente</strong>.
+                </p>
+                
+                <div className="bg-slate-50 p-4 rounded-lg text-left w-full border border-slate-200 mb-6 overflow-x-auto">
+                  <p className="text-xs font-mono text-red-600 break-all mb-2">{error?.message || "Erro desconhecido"}</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-1">Como resolver:</p>
+                  <ol className="list-decimal list-inside text-sm text-slate-600 space-y-1">
+                    <li>Acesse o <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">Console do Firebase</a>.</li>
+                    <li>Selecione o projeto <strong>gerenciador-inteligente</strong>.</li>
+                    <li>Vá em <strong>Criação</strong> &gt; <strong>Authentication</strong>.</li>
+                    <li>Clique na aba <strong>Sign-in method</strong>.</li>
+                    <li>Ative o provedor <strong>Anônimo (Anonymous)</strong>.</li>
+                  </ol>
+                </div>
+
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-6 rounded-lg transition-colors w-full md:w-auto"
+                >
+                  Tentar Novamente
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
+        // --- Componente de Login ---
+        const LoginScreen = ({ onLogin, loading }) => {
+          const [name, setName] = useState("");
+          const [password, setPassword] = useState("");
+          const [showPassword, setShowPassword] = useState(false);
+
+          const handleSubmit = (e) => {
             e.preventDefault();
-            
-            // Coleta dados
-            const data = new FormData(form);
-            
-            // Atualiza objeto de estado
-            // Resetar arrays para evitar duplicação em re-submissão
-            formData.atividades = data.getAll('atividades');
-            formData.infoProduto = data.getAll('infoProduto');
-            formData.alertasAutomaticos = data.getAll('alertasAutomaticos');
-            formData.infoSaida = data.getAll('infoSaida');
-            formData.infoFornecedor = data.getAll('infoFornecedor');
-            formData.relatorios = data.getAll('relatorios');
-            formData.seguranca = data.getAll('seguranca');
-            
-            // Campos simples
-            formData.nome = data.get('nome');
-            formData.cargo = data.get('cargo');
-            formData.tempoAtuacao = data.get('tempoAtuacao');
-            formData.atividadesOutro = data.get('atividadesOutro');
-            formData.pontosCriticos = data.get('pontosCriticos');
-            formData.facilidadeUso = data.get('facilidadeUso') || 3;
-            formData.trilhaAuditoria = data.get('trilhaAuditoria');
-            formData.prioridades = data.get('prioridades');
-            formData.expectativasMelhoria = data.get('expectativasMelhoria');
-            
-            // Renderiza e mostra dashboard
-            renderDashboard();
-            toggleView(true);
-            window.scrollTo(0, 0);
-        });
+            if (name.trim()) onLogin(name);
+          };
 
-        // Botão de editar
-        btnEdit.addEventListener('click', function() {
-            toggleView(false);
-            window.scrollTo(0, 0);
-        });
-
-        function toggleView(showDashboard) {
-            if (showDashboard) {
-                formView.classList.add('hidden');
-                dashboardView.classList.remove('hidden');
-            } else {
-                formView.classList.remove('hidden');
-                dashboardView.classList.add('hidden');
-            }
-        }
-
-        function renderDashboard() {
-            // Lógica de cores da barra de facilidade
-            const score = parseInt(formData.facilidadeUso);
-            let barColor = 'bg-red-500';
-            let uxText = "Foco funcional com curva de aprendizado aceitável.";
-            if (score >= 4) {
-                barColor = 'bg-green-500';
-                uxText = "Alta exigência de usabilidade e intuitividade.";
-            } else if (score === 3) {
-                barColor = 'bg-yellow-500';
-            }
-
-            // HTML dos Tags
-            const createTags = (arr, colorClass = "bg-blue-100 text-blue-800") => {
-                if (!arr || arr.length === 0) return '<span class="text-slate-400 text-sm">Nenhum selecionado.</span>';
-                return arr.map(item => 
-                    `<span class="px-2 py-1 rounded-md text-xs font-medium ${colorClass} mr-2 mb-2 inline-block border border-transparent">${item}</span>`
-                ).join('');
-            };
-
-            // HTML da lista de atividades
-            const createList = (arr, outro) => {
-                let html = '<ul class="space-y-2 text-sm text-slate-700">';
-                if (arr.length > 0) {
-                    html += arr.map(item => 
-                        `<li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>${item}</li>`
-                    ).join('');
-                } else {
-                    html += '<li class="text-slate-400">Nenhuma atividade selecionada</li>';
-                }
-                if (outro) {
-                    html += `<li class="flex items-center gap-2 font-medium text-blue-700"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>${outro}</li>`;
-                }
-                html += '</ul>';
-                return html;
-            };
-
-            const html = `
-                <!-- Coluna 1 -->
-                <div class="space-y-6 print:mb-6 print:break-inside-avoid">
-                    
-                    <!-- Card Perfil -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-t-4 border-t-blue-500 print:border print:shadow-none">
-                        <div class="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2">
-                            <i data-lucide="user" class="w-4 h-4"></i> Perfil do Respondente
-                        </div>
-                        <div class="text-center md:text-left">
-                            <h3 class="text-xl font-bold text-slate-800">${formData.nome || "Não informado"}</h3>
-                            <p class="text-blue-600 font-medium">${formData.cargo || "Cargo não informado"}</p>
-                            <div class="flex items-center justify-center md:justify-start gap-2 mt-3 text-slate-500 text-sm">
-                                <i data-lucide="clock" class="w-3 h-3"></i>
-                                <span>Experiência: ${formData.tempoAtuacao || "-"}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card UX -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:border print:shadow-none">
-                        <div class="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2">
-                            <i data-lucide="activity" class="w-4 h-4"></i> Expectativa de UX
-                        </div>
-                        <div class="flex items-end gap-2 mb-2">
-                            <span class="text-4xl font-bold text-slate-800">${score}</span>
-                            <span class="text-slate-400 mb-1">/ 5</span>
-                        </div>
-                        <div class="w-full bg-slate-200 rounded-full h-2.5 mb-2">
-                            <div class="h-2.5 rounded-full ${barColor}" style="width: ${(score/5)*100}%"></div>
-                        </div>
-                        <p class="text-xs text-slate-500">${uxText}</p>
-                    </div>
-
-                    <!-- Card Segurança -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:border print:shadow-none">
-                        <div class="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2">
-                            <i data-lucide="shield-check" class="w-4 h-4"></i> Segurança Exigida
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            ${createTags(formData.seguranca, "bg-red-50 text-red-700 border border-red-100")}
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-sm">
-                            <span class="text-slate-600">Auditoria Completa?</span>
-                            <span class="font-bold ${formData.trilhaAuditoria === 'Sim' ? 'text-green-600' : 'text-slate-500'}">
-                                ${formData.trilhaAuditoria || "-"}
-                            </span>
-                        </div>
-                    </div>
+          return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-200 animate-in fade-in zoom-in-95 duration-300">
+                <div className="flex flex-col items-center mb-8">
+                  <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg rotate-3">
+                    <Package size={32} className="text-white" />
+                  </div>
+                  <h1 className="text-2xl font-bold text-slate-800 text-center">Estoque Inteligente</h1>
+                  <p className="text-slate-500 text-sm mt-1 text-center">Gestão Profissional de Compras</p>
                 </div>
 
-                <!-- Coluna 2 -->
-                <div class="space-y-6 md:col-span-2 print:mb-6">
-                    
-                    <!-- Card Pontos Críticos -->
-                    <div class="bg-orange-50 p-6 rounded-xl shadow-sm border border-orange-200 print:border print:shadow-none">
-                        <div class="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2 border-orange-200">
-                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Pontos Críticos & Dores
-                        </div>
-                        <div class="relative pl-4 border-l-4 border-orange-300">
-                            <p class="text-slate-700 italic text-sm md:text-base">
-                                "${formData.pontosCriticos || "Nenhum ponto crítico descrito."}"
-                            </p>
-                        </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Nome de Utilizador</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                      <input 
+                        type="text" 
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm font-medium"
+                        placeholder="Ex: João Silva"
+                        required
+                      />
                     </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 print:block print:space-y-6">
-                        <!-- Card Escopo -->
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:border print:shadow-none">
-                            <div class="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2">
-                                <i data-lucide="check-circle-2" class="w-4 h-4"></i> Escopo Operacional
-                            </div>
-                            ${createList(formData.atividades, formData.atividadesOutro)}
-                        </div>
-
-                        <!-- Card Dados -->
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:border print:shadow-none">
-                            <div class="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2">
-                                <i data-lucide="file-text" class="w-4 h-4"></i> Requisitos de Dados
-                            </div>
-                            <div class="space-y-4">
-                                <div>
-                                    <h4 class="text-xs font-bold text-slate-400 mb-2 uppercase">Produto</h4>
-                                    <div class="flex flex-wrap">
-                                        ${createTags(formData.infoProduto.slice(0, 5))}
-                                        ${formData.infoProduto.length > 5 ? `<span class="px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600 mr-2 mb-2 inline-block border border-transparent">+${formData.infoProduto.length - 5}</span>` : ''}
-                                    </div>
-                                </div>
-                                <div>
-                                    <h4 class="text-xs font-bold text-slate-400 mb-2 uppercase">Fornecedor</h4>
-                                    <div class="flex flex-wrap">
-                                        ${createTags(formData.infoFornecedor.slice(0, 3), "bg-purple-50 text-purple-700")}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Palavra-passe</label>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                         <Lock size={18} />
+                      </div>
+                      <input 
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm font-medium"
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors p-1"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
                     </div>
+                  </div>
 
-                    <!-- Card Objetivos -->
-                    <div class="bg-gradient-to-r from-white to-blue-50 p-6 rounded-xl shadow-sm border border-slate-200 print:border print:shadow-none">
-                        <div class="flex items-center gap-2 mb-4 text-slate-500 uppercase text-xs font-bold tracking-wider border-b pb-2">
-                            <i data-lucide="target" class="w-4 h-4"></i> Objetivos Estratégicos
-                        </div>
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <div>
-                                <h4 class="text-sm font-bold text-blue-900 mb-2">Principais Prioridades</h4>
-                                <p class="text-slate-700 text-sm bg-white p-3 rounded border border-blue-100 shadow-sm">
-                                    ${formData.prioridades || "Não informado"}
-                                </p>
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-bold text-green-900 mb-2">Melhoria Esperada</h4>
-                                <p class="text-slate-700 text-sm bg-white p-3 rounded border border-green-100 shadow-sm">
-                                    ${formData.expectativasMelhoria || "Não informado"}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Footer -->
-                    <div class="flex justify-between items-center text-xs text-slate-400 pt-4 print:text-black">
-                        <span>Gerado em: ${new Date().toLocaleDateString()}</span>
-                        <span>ID Sessão: ${Math.random().toString(36).substr(2, 9).toUpperCase()}</span>
-                    </div>
+                  <button 
+                    type="submit" 
+                    disabled={loading}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:scale-[1.02] flex items-center justify-center gap-2 mt-4"
+                  >
+                    {loading ? <Loader2 className="animate-spin" size={20} /> : <><LogIn size={20} /> Entrar no Sistema</>}
+                  </button>
+                </form>
+                
+                <div className="mt-6 text-center">
+                  <p className="text-xs text-slate-400">Acesso seguro • v1.0.5</p>
                 </div>
-            `;
+              </div>
+            </div>
+          );
+        };
 
-            dashboardContent.innerHTML = html;
-            // Re-renderiza ícones no novo conteúdo inserido
-            lucide.createIcons();
+        const Badge = ({ children, color = "blue" }) => {
+          const colors = {
+            blue: "bg-blue-100 text-blue-700",
+            red: "bg-red-100 text-red-700",
+            green: "bg-emerald-100 text-emerald-700",
+            amber: "bg-amber-100 text-amber-700",
+            gray: "bg-slate-100 text-slate-700"
+          };
+          return (
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[color] || colors.blue} whitespace-nowrap`}>
+              {children}
+            </span>
+          );
+        };
+
+        const Button = ({ children, onClick, variant = "primary", className = "", disabled = false, icon: Icon }) => {
+          const variants = {
+            primary: "bg-indigo-600 hover:bg-indigo-700 text-white",
+            secondary: "bg-white hover:bg-slate-50 text-slate-700 border border-slate-300",
+            danger: "bg-red-600 hover:bg-red-700 text-white",
+            ghost: "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+          };
+          
+          return (
+            <button 
+              onClick={onClick} 
+              disabled={disabled}
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${className}`}
+            >
+              {Icon && <Icon size={16} />}
+              {children}
+            </button>
+          );
+        };
+
+        const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
+          if (!isOpen) return null;
+          const sizes = {
+            md: "max-w-lg",
+            lg: "max-w-2xl",
+            xl: "max-w-4xl"
+          };
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+              <div className={`bg-white rounded-2xl shadow-xl w-full ${sizes[size]} max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200`}>
+                <div className="flex items-center justify-between p-6 border-b border-slate-100 shrink-0">
+                  <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+                  <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1">
+                    <X size={20} />
+                  </button>
+                </div>
+                <div className="p-6 overflow-y-auto grow">
+                  {children}
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        const Input = ({ label, type = "text", value, onChange, placeholder, required = false, step, min, max, disabled }) => (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              {label} {required && <span className="text-red-500">*</span>}
+            </label>
+            <input
+              type={type}
+              value={value}
+              onChange={onChange}
+              placeholder={placeholder}
+              required={required}
+              step={step}
+              min={min}
+              max={max}
+              disabled={disabled}
+              className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm disabled:bg-slate-100 disabled:text-slate-500 transition-all"
+            />
+          </div>
+        );
+
+        const Select = ({ label, value, onChange, options, required = false }) => (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              {label} {required && <span className="text-red-500">*</span>}
+            </label>
+            <div className="relative">
+              <select
+                value={value}
+                onChange={onChange}
+                required={required}
+                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm appearance-none"
+              >
+                <option value="">Selecione...</option>
+                {options.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-500">
+                <ChevronRight className="rotate-90" size={16} />
+              </div>
+            </div>
+          </div>
+        );
+
+        const StarRating = ({ rating, setRating, readonly = false }) => {
+          return (
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  disabled={readonly}
+                  onClick={() => !readonly && setRating(star)}
+                  className={`focus:outline-none ${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-110 transition-transform'}`}
+                >
+                  <svg
+                    className={`w-5 h-5 ${star <= rating ? 'text-amber-400 fill-amber-400' : 'text-slate-300 fill-slate-100'}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          );
+        };
+
+        // --- Componente Principal ---
+
+        function App() {
+          const [user, setUser] = useState(null);
+          const [userName, setUserName] = useState("Usuário");
+          const [currentView, setCurrentView] = useState('dashboard');
+          const [appMode, setAppMode] = useState('auth'); 
+          const [authError, setAuthError] = useState(null);
+          
+          const [products, setProducts] = useState([]);
+          const [suppliers, setSuppliers] = useState([]);
+          const [transactions, setTransactions] = useState([]);
+          const [loading, setLoading] = useState(true);
+
+          const [chatMessages, setChatMessages] = useState([]);
+          const [messageInput, setMessageInput] = useState("");
+          const [isAiTyping, setIsAiTyping] = useState(false);
+          const messagesEndRef = useRef(null);
+
+          const [modalType, setModalType] = useState(null);
+          const [editingItem, setEditingItem] = useState(null);
+          const [confirmation, setConfirmation] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+          
+          const [filterText, setFilterText] = useState("");
+          const [filterLowStock, setFilterLowStock] = useState(false);
+          const [filterExpiring, setFilterExpiring] = useState(false);
+
+          const [formData, setFormData] = useState({});
+
+          // Efeito de Autenticação
+          useEffect(() => {
+            const initAuth = async () => {
+              try {
+                // Tenta logar anonimamente direto, pois estamos em ambiente HTML puro sem token externo
+                await signInAnonymously(auth);
+              } catch (anonErr) {
+                console.error("Erro crítico na autenticação:", anonErr);
+                setAuthError(anonErr); 
+                setLoading(false);
+              }
+            };
+            initAuth();
+            const unsubscribe = onAuthStateChanged(auth, (u) => {
+              setUser(u);
+              if (u) {
+                setAuthError(null);
+                setLoading(false);
+              }
+            });
+            return () => unsubscribe();
+          }, []);
+
+          // Efeito de Dados
+          useEffect(() => {
+            if (!user) return;
+
+            const basePath = `artifacts/${appId}/users/${user.uid}`;
+            
+            const unsubProfile = onSnapshot(doc(db, basePath, 'settings', 'profile'), (d) => {
+              if (d.exists() && d.data().displayName) {
+                setUserName(d.data().displayName);
+              }
+            });
+
+            const unsubProducts = onSnapshot(collection(db, basePath, 'products'), (snap) => {
+              const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+              setProducts(data);
+            });
+
+            const unsubSuppliers = onSnapshot(collection(db, basePath, 'suppliers'), (snap) => {
+              const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+              setSuppliers(data);
+            });
+
+            const qTransactions = query(collection(db, basePath, 'transactions'), orderBy('date', 'desc'));
+            const unsubTransactions = onSnapshot(qTransactions, (snap) => {
+              const data = snap.docs.map(d => ({ 
+                id: d.id, 
+                ...d.data(),
+                date: d.data().date?.toDate ? d.data().date.toDate() : new Date()
+              }));
+              setTransactions(data);
+              setLoading(false);
+            });
+
+            return () => {
+              unsubProfile();
+              unsubProducts();
+              unsubSuppliers();
+              unsubTransactions();
+            };
+          }, [user]);
+
+          // Handler de Login
+          const handleLogin = async (inputName) => {
+            if (!user) return;
+            
+            if (inputName && inputName !== userName) {
+              try {
+                await setDoc(doc(db, `artifacts/${appId}/users/${user.uid}/settings/profile`), {
+                  displayName: inputName
+                }, { merge: true });
+                setUserName(inputName);
+              } catch (err) {
+                console.error("Erro ao salvar perfil:", err);
+              }
+            }
+            
+            setAppMode('app');
+          };
+
+          const handleLogout = () => {
+            setAppMode('auth');
+          };
+
+          // Chat Geral
+          useEffect(() => {
+            if (!user) return;
+
+            const messagesPath = `artifacts/${appId}/users/${user.uid}/stock_chat`;
+            
+            const unsubMessages = onSnapshot(collection(db, messagesPath), (snap) => {
+              const msgs = snap.docs.map(d => ({
+                id: d.id,
+                ...d.data(),
+                createdAt: d.data().createdAt?.toDate ? d.data().createdAt.toDate() : new Date()
+              }));
+              msgs.sort((a, b) => a.createdAt - b.createdAt);
+              setChatMessages(msgs);
+            });
+
+            return () => unsubMessages();
+          }, [user]);
+
+          useEffect(() => {
+            if (messagesEndRef.current) {
+              messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+            }
+          }, [chatMessages, modalType, isAiTyping]);
+
+          const kpis = useMemo(() => {
+            const today = new Date();
+            const next30Days = new Date();
+            next30Days.setDate(today.getDate() + 30);
+
+            let totalValue = 0;
+            let criticalCount = 0;
+            let expiredCount = 0;
+            let expiringCount = 0;
+
+            products.forEach(p => {
+              totalValue += (p.price || 0) * (p.quantity || 0);
+              if (p.quantity <= p.minStock) criticalCount++;
+              
+              if (p.expiryDate) {
+                const expiry = new Date(p.expiryDate);
+                if (expiry < today) expiredCount++;
+                else if (expiry <= next30Days) expiringCount++;
+              }
+            });
+
+            const last30DaysTransactions = transactions.filter(t => {
+              const diffTime = Math.abs(today - t.date);
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+              return diffDays <= 30 && t.type === 'OUT';
+            });
+
+            const monthlyConsumptionValue = last30DaysTransactions.reduce((acc, t) => acc + (t.totalValue || 0), 0);
+            const forecast = monthlyConsumptionValue * 1.10;
+
+            return { totalValue, criticalCount, expiredCount, expiringCount, forecast, monthlyConsumptionValue };
+          }, [products, transactions]);
+
+          const consumptionByDestination = useMemo(() => {
+            const grouped = {};
+            transactions.filter(t => t.type === 'OUT').forEach(t => {
+              const dest = t.destination || 'Não informado';
+              grouped[dest] = (grouped[dest] || 0) + (t.totalValue || 0);
+            });
+            return Object.entries(grouped).sort((a, b) => b[1] - a[1]); 
+          }, [transactions]);
+
+          const handleOpenModal = (type, item = null) => {
+            setModalType(type);
+            setEditingItem(item);
+            if (type === 'product') {
+              setFormData(item || { 
+                name: '', category: '', unit: 'UN', quantity: 0, minStock: 5, 
+                price: 0, expiryDate: '', supplierId: '' 
+              });
+            } else if (type === 'supplier') {
+              setFormData(item || { 
+                name: '', cnpj: '', contact: '', rating: 5, deliveryTime: 1 
+              });
+            } else if (type === 'output') {
+              setFormData({ 
+                productId: '', quantity: 1, destination: '', responsible: ''
+              });
+            } else if (type === 'stockChat') {
+              setMessageInput("");
+            } else if (type === 'profile') {
+              setFormData({ name: userName });
+            }
+          };
+
+          const handleCloseModal = () => {
+            setModalType(null);
+            setEditingItem(null);
+            setFormData({});
+            setIsAiTyping(false);
+          };
+
+          const callGeminiAPI = async (lastUserMessage) => {
+            setIsAiTyping(true);
+            const apiKey = ""; 
+            
+            try {
+              const stockContext = products.map(p => 
+                `- ${p.name} (${p.category}): Qtd ${p.quantity} ${p.unit}, Preço R$${p.price}, Validade ${p.expiryDate || 'N/A'}, Mínimo ${p.minStock}`
+              ).join('\n');
+
+              const systemPrompt = `Você é um Analista de Estoque Inteligente e prestativo.
+              
+              SEUS DADOS ATUAIS (ESTOQUE):
+              ${stockContext || "O estoque está vazio no momento."}
+
+              INSTRUÇÕES:
+              1. Use os dados acima para responder perguntas sobre quantidades, valores, vencimentos e status do estoque.
+              2. Se perguntarem "o que comprar?", verifique itens abaixo do mínimo.
+              3. Se perguntarem "o que está vencendo?", verifique as datas de validade próximas de hoje (${new Date().toLocaleDateString()}).
+              4. Seja conciso e direto. Use formatação simples.
+              5. Se a pergunta não for sobre estoque, responda educadamente que seu foco é o gerenciamento de produtos.
+              `;
+              
+              const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    contents: [{ role: "user", parts: [{ text: lastUserMessage }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                  })
+                }
+              );
+
+              if (!response.ok) {
+                throw new Error("Falha na comunicação com a IA");
+              }
+
+              const data = await response.json();
+              const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui analisar os dados do estoque no momento.";
+
+              const messagesPath = `artifacts/${appId}/users/${user.uid}/stock_chat`;
+              await addDoc(collection(db, messagesPath), {
+                text: aiText,
+                sender: 'ai',
+                createdAt: serverTimestamp()
+              });
+
+            } catch (error) {
+              console.error("Erro AI:", error);
+            } finally {
+              setIsAiTyping(false);
+            }
+          };
+
+          const handleSendMessage = async () => {
+            if (!messageInput.trim() || !user) return;
+            
+            const currentMsg = messageInput;
+            const messagesPath = `artifacts/${appId}/users/${user.uid}/stock_chat`;
+            
+            try {
+              setMessageInput(""); 
+              await addDoc(collection(db, messagesPath), {
+                text: currentMsg,
+                sender: 'user', 
+                createdAt: serverTimestamp()
+              });
+              await callGeminiAPI(currentMsg);
+            } catch (err) {
+              console.error("Erro ao enviar mensagem:", err);
+            }
+          };
+
+          const saveProduct = async (e) => {
+            e.preventDefault();
+            if (!user) return;
+            const path = `artifacts/${appId}/users/${user.uid}/products`;
+            
+            try {
+              const payload = {
+                ...formData,
+                quantity: Number(formData.quantity),
+                minStock: Number(formData.minStock),
+                price: Number(formData.price),
+                updatedAt: serverTimestamp()
+              };
+
+              if (editingItem) {
+                await updateDoc(doc(db, path, editingItem.id), payload);
+              } else {
+                await addDoc(collection(db, path), { ...payload, createdAt: serverTimestamp() });
+              }
+              handleCloseModal();
+            } catch (err) {
+              console.error("Erro ao salvar produto:", err);
+            }
+          };
+
+          const saveSupplier = async (e) => {
+            e.preventDefault();
+            if (!user) return;
+            const path = `artifacts/${appId}/users/${user.uid}/suppliers`;
+
+            try {
+              if (editingItem) {
+                await updateDoc(doc(db, path, editingItem.id), formData);
+              } else {
+                await addDoc(collection(db, path), formData);
+              }
+              handleCloseModal();
+            } catch (err) {
+              console.error(err);
+            }
+          };
+
+          const saveProfile = async (e) => {
+            e.preventDefault();
+            if (!user) return;
+            try {
+              await setDoc(doc(db, `artifacts/${appId}/users/${user.uid}/settings/profile`), {
+                displayName: formData.name
+              }, { merge: true });
+              handleCloseModal();
+            } catch (err) {
+              console.error("Erro ao salvar perfil:", err);
+            }
+          };
+
+          const registerOutput = async (e) => {
+            e.preventDefault();
+            if (!user) return;
+            
+            const product = products.find(p => p.id === formData.productId);
+            if (!product) return;
+            
+            const qty = Number(formData.quantity);
+            if (product.quantity < qty) {
+              setConfirmation({
+                 isOpen: true,
+                 title: "Estoque Insuficiente",
+                 message: `Você tentou retirar ${qty}, mas só existem ${product.quantity} no estoque.`,
+                 onConfirm: () => setConfirmation({ ...confirmation, isOpen: false }),
+                 singleButton: true
+              });
+              return;
+            }
+
+            try {
+              const transactionPath = `artifacts/${appId}/users/${user.uid}/transactions`;
+              const totalVal = qty * product.price;
+              
+              await addDoc(collection(db, transactionPath), {
+                type: 'OUT',
+                productId: product.id,
+                productName: product.name,
+                quantity: qty,
+                priceAtMoment: product.price,
+                totalValue: totalVal,
+                destination: formData.destination,
+                responsible: formData.responsible,
+                date: serverTimestamp()
+              });
+
+              const productPath = `artifacts/${appId}/users/${user.uid}/products`;
+              await updateDoc(doc(db, productPath, product.id), {
+                quantity: product.quantity - qty
+              });
+
+              handleCloseModal();
+            } catch (err) {
+              console.error(err);
+            }
+          };
+
+          const handleDelete = (collectionName, id) => {
+            setConfirmation({
+              isOpen: true,
+              title: "Confirmar Exclusão",
+              message: "Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.",
+              onConfirm: async () => {
+                try {
+                  await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/${collectionName}`, id));
+                  setConfirmation(prev => ({ ...prev, isOpen: false }));
+                } catch (err) {
+                  console.error(err);
+                }
+              }
+            });
+          };
+
+          // Renderização Views
+          const renderDashboard = () => (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="p-4 border-l-4 border-l-indigo-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-500">Valor em Estoque</p>
+                      <h3 className="text-2xl font-bold text-slate-800">
+                        {kpis.totalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </h3>
+                    </div>
+                    <div className="p-3 bg-indigo-50 rounded-full text-indigo-600">
+                      <TrendingUp size={24} />
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4 border-l-4 border-l-red-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-500">Itens Críticos</p>
+                      <h3 className="text-2xl font-bold text-red-600">{kpis.criticalCount}</h3>
+                    </div>
+                    <div className="p-3 bg-red-50 rounded-full text-red-600">
+                      <AlertTriangle size={24} />
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4 border-l-4 border-l-amber-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-500">Vencendo (30d)</p>
+                      <h3 className="text-2xl font-bold text-amber-600">{kpis.expiringCount + kpis.expiredCount}</h3>
+                    </div>
+                    <div className="p-3 bg-amber-50 rounded-full text-amber-600">
+                      <Calendar size={24} />
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4 border-l-4 border-l-emerald-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-500">Previsão Compra (Mês)</p>
+                      <h3 className="text-2xl font-bold text-emerald-600">
+                        {kpis.forecast.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-1">Baseado no consumo + 10%</p>
+                    </div>
+                    <div className="p-3 bg-emerald-50 rounded-full text-emerald-600">
+                      <ArrowUpRight size={24} />
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-2 p-6">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-4">Consumo por Destino</h3>
+                  <div className="space-y-4">
+                    {consumptionByDestination.length === 0 ? (
+                      <p className="text-slate-400 text-center py-8">Sem dados de movimentação.</p>
+                    ) : (
+                      consumptionByDestination.map(([dest, val]) => (
+                        <div key={dest}>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="font-medium text-slate-700">{dest}</span>
+                            <span className="text-slate-500">{val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-2.5">
+                            <div 
+                              className="bg-indigo-500 h-2.5 rounded-full transition-all duration-500" 
+                              style={{ width: `${(val / consumptionByDestination[0][1]) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </Card>
+
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-4">Alertas de Ação</h3>
+                  <div className="space-y-3">
+                    {kpis.expiredCount > 0 && (
+                      <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
+                        <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={18} />
+                        <div>
+                          <h4 className="text-sm font-semibold text-red-700">Produtos Vencidos</h4>
+                          <p className="text-xs text-red-600">{kpis.expiredCount} itens precisam de descarte.</p>
+                        </div>
+                      </div>
+                    )}
+                    {kpis.criticalCount > 0 && (
+                      <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
+                        <Package className="text-amber-500 shrink-0 mt-0.5" size={18} />
+                        <div>
+                          <h4 className="text-sm font-semibold text-amber-700">Estoque Baixo</h4>
+                          <p className="text-xs text-amber-600">{kpis.criticalCount} itens abaixo do mínimo.</p>
+                          <button 
+                            onClick={() => {
+                              setFilterLowStock(true);
+                              setCurrentView('products');
+                            }}
+                            className="text-xs text-amber-800 font-bold underline mt-1"
+                          >
+                            Ver itens
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                     {kpis.expiredCount === 0 && kpis.criticalCount === 0 && (
+                       <div className="flex flex-col items-center justify-center py-8 text-center">
+                         <CheckCircle className="text-emerald-500 mb-2" size={32} />
+                         <p className="text-slate-600 text-sm font-medium">Tudo certo por aqui!</p>
+                       </div>
+                     )}
+                  </div>
+                </Card>
+              </div>
+            </div>
+          );
+
+          const renderProducts = () => {
+            const filtered = products.filter(p => {
+              const matchText = p.name.toLowerCase().includes(filterText.toLowerCase()) || 
+                                p.category.toLowerCase().includes(filterText.toLowerCase());
+              const matchLow = filterLowStock ? p.quantity <= p.minStock : true;
+              let matchExp = true;
+              if (filterExpiring) {
+                if (!p.expiryDate) matchExp = false;
+                else {
+                  const days = Math.ceil((new Date(p.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+                  matchExp = days <= 30;
+                }
+              }
+              return matchText && matchLow && matchExp;
+            });
+
+            return (
+              <div className="space-y-4 animate-in fade-in duration-300">
+                <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                  <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input 
+                      type="text" 
+                      placeholder="Buscar produto..." 
+                      value={filterText}
+                      onChange={e => setFilterText(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                    <button 
+                      onClick={() => setFilterLowStock(!filterLowStock)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-1 whitespace-nowrap ${filterLowStock ? 'bg-red-100 border-red-200 text-red-700' : 'bg-white border-slate-300 text-slate-600'}`}
+                    >
+                      <AlertTriangle size={12} /> Estoque Baixo
+                    </button>
+                    <button 
+                      onClick={() => setFilterExpiring(!filterExpiring)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-1 whitespace-nowrap ${filterExpiring ? 'bg-amber-100 border-amber-200 text-amber-700' : 'bg-white border-slate-300 text-slate-600'}`}
+                    >
+                      <Calendar size={12} /> Vencendo
+                    </button>
+                    <Button onClick={() => handleOpenModal('product')} icon={Plus} className="ml-auto md:ml-2 whitespace-nowrap">
+                      Novo Produto
+                    </Button>
+                  </div>
+                </div>
+
+                <Card className="overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+                        <tr>
+                          <th className="px-4 py-3 whitespace-nowrap">Produto</th>
+                          <th className="px-4 py-3 whitespace-nowrap">Categoria</th>
+                          <th className="px-4 py-3 text-right whitespace-nowrap">Qtd. Atual</th>
+                          <th className="px-4 py-3 text-center whitespace-nowrap">Unidade</th>
+                          <th className="px-4 py-3 text-right whitespace-nowrap">Preço Un.</th>
+                          <th className="px-4 py-3 whitespace-nowrap">Validade</th>
+                          <th className="px-4 py-3 text-center whitespace-nowrap">Status</th>
+                          <th className="px-4 py-3 text-right whitespace-nowrap">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {filtered.map(p => {
+                          const isLow = p.quantity <= p.minStock;
+                          const isExpired = p.expiryDate && new Date(p.expiryDate) < new Date();
+                          const daysToExpiry = p.expiryDate ? Math.ceil((new Date(p.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)) : 999;
+                          const isExpiring = daysToExpiry <= 30 && !isExpired;
+
+                          return (
+                            <tr key={p.id} className="hover:bg-slate-50/50">
+                              <td className="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">{p.name}</td>
+                              <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{p.category}</td>
+                              <td className="px-4 py-3 text-right font-bold text-slate-800 whitespace-nowrap">{p.quantity}</td>
+                              <td className="px-4 py-3 text-center text-slate-500 whitespace-nowrap">{p.unit}</td>
+                              <td className="px-4 py-3 text-right text-slate-600 whitespace-nowrap">
+                                {p.price?.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}
+                              </td>
+                              <td className={`px-4 py-3 whitespace-nowrap ${isExpired ? 'text-red-600 font-medium' : 'text-slate-500'}`}>
+                                {p.expiryDate ? new Date(p.expiryDate).toLocaleDateString('pt-BR') : '-'}
+                              </td>
+                              <td className="px-4 py-3 text-center whitespace-nowrap">
+                                {isExpired ? <Badge color="red">Vencido</Badge> : 
+                                 isLow ? <Badge color="red">Crítico</Badge> : 
+                                 isExpiring ? <Badge color="amber">Vence Logo</Badge> :
+                                 <Badge color="green">Normal</Badge>}
+                              </td>
+                              <td className="px-4 py-3 text-right whitespace-nowrap">
+                                <div className="flex justify-end gap-2">
+                                  <button onClick={() => handleOpenModal('product', p)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-md" title="Editar">
+                                    <Edit size={16} />
+                                  </button>
+                                  <button onClick={() => handleDelete('products', p.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-md" title="Excluir">
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    {filtered.length === 0 && (
+                      <div className="p-8 text-center text-slate-400">
+                        Nenhum produto encontrado com os filtros atuais.
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </div>
+            );
+          };
+
+          const renderSuppliers = () => (
+            <div className="space-y-4 animate-in fade-in duration-300">
+              <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <h2 className="text-lg font-semibold text-slate-800">Fornecedores</h2>
+                <Button onClick={() => handleOpenModal('supplier')} icon={Plus}>Novo</Button>
+              </div>
+
+              <Card className="overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="px-4 py-3 whitespace-nowrap">Nome / Razão Social</th>
+                        <th className="px-4 py-3 whitespace-nowrap">CNPJ</th>
+                        <th className="px-4 py-3 whitespace-nowrap">Contato</th>
+                        <th className="px-4 py-3 whitespace-nowrap">Prazo (Dias)</th>
+                        <th className="px-4 py-3 whitespace-nowrap">Avaliação</th>
+                        <th className="px-4 py-3 text-right whitespace-nowrap">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {suppliers.map(s => (
+                        <tr key={s.id} className="hover:bg-slate-50/50">
+                          <td className="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <Truck size={16} className="text-indigo-500" />
+                              {s.name}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{s.cnpj || '-'}</td>
+                          <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{s.contact || '-'}</td>
+                          <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{s.deliveryTime}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <StarRating rating={s.rating} readonly />
+                          </td>
+                          <td className="px-4 py-3 text-right whitespace-nowrap">
+                            <div className="flex justify-end gap-2">
+                              <button onClick={() => handleOpenModal('supplier', s)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-md" title="Editar">
+                                <Edit size={16} />
+                              </button>
+                              <button onClick={() => handleDelete('suppliers', s.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-md" title="Excluir">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {suppliers.length === 0 && (
+                    <div className="p-8 text-center text-slate-400">Nenhum fornecedor cadastrado.</div>
+                  )}
+                </div>
+              </Card>
+            </div>
+          );
+
+          const renderTransactions = () => (
+            <div className="space-y-4 animate-in fade-in duration-300">
+              <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <h2 className="text-lg font-semibold text-slate-800">Histórico de Saídas</h2>
+                <Button onClick={() => handleOpenModal('output')} icon={ArrowUpRight} variant="primary">
+                  Registrar Saída
+                </Button>
+              </div>
+
+              <Card className="overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="px-4 py-3 whitespace-nowrap">Data</th>
+                        <th className="px-4 py-3 whitespace-nowrap">Produto</th>
+                        <th className="px-4 py-3 text-right whitespace-nowrap">Qtd</th>
+                        <th className="px-4 py-3 text-right whitespace-nowrap">Valor Total</th>
+                        <th className="px-4 py-3 whitespace-nowrap">Destino</th>
+                        <th className="px-4 py-3 whitespace-nowrap">Responsável</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {transactions.map(t => (
+                        <tr key={t.id} className="hover:bg-slate-50/50">
+                          <td className="px-4 py-3 whitespace-nowrap text-slate-600">
+                            {t.date ? t.date.toLocaleDateString('pt-BR') : '-'}
+                          </td>
+                          <td className="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">{t.productName}</td>
+                          <td className="px-4 py-3 text-right text-red-600 font-medium whitespace-nowrap">-{t.quantity}</td>
+                          <td className="px-4 py-3 text-right text-slate-600 whitespace-nowrap">
+                            {t.totalValue?.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <Badge color="gray">{t.destination}</Badge>
+                          </td>
+                          <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{t.responsible}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {transactions.length === 0 && (
+                    <div className="p-8 text-center text-slate-400">Nenhuma movimentação registrada.</div>
+                  )}
+                </div>
+              </Card>
+            </div>
+          );
+
+          if (authError) {
+            return <AuthErrorScreen error={authError} />;
+          }
+
+          if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-indigo-600"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-current"></div></div>;
+
+          if (appMode === 'auth') {
+            return <LoginScreen onLogin={handleLogin} loading={loading} />;
+          }
+
+          return (
+            <div className="flex h-screen bg-slate-50 text-slate-800 font-sans overflow-hidden">
+              <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 z-10">
+                <div className="p-6 border-b border-slate-100">
+                  <h1 className="text-xl font-bold text-indigo-700 flex items-center gap-2">
+                    <Package className="fill-indigo-100" /> Estoque Inteligente
+                  </h1>
+                </div>
+                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+                  {[
+                    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                    { id: 'products', label: 'Produtos', icon: Package },
+                    { id: 'transactions', label: 'Movimentações', icon: ArrowUpRight },
+                    { id: 'suppliers', label: 'Fornecedores', icon: Truck },
+                  ].map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => setCurrentView(item.id)}
+                      className={`flex items-center w-full gap-3 px-4 py-3 rounded-xl transition-all font-medium ${currentView === item.id ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+                    >
+                      <item.icon size={20} />
+                      {item.label}
+                    </button>
+                  ))}
+                </nav>
+                <div className="p-4 border-t border-slate-100">
+                   <div className="flex items-center gap-3 px-4 py-3">
+                     <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-xs font-bold shrink-0">
+                       <User size={16} />
+                     </div>
+                     <div className="overflow-hidden flex-1">
+                        <p className="text-xs font-medium text-slate-900 truncate">{userName}</p>
+                        <p className="text-[10px] text-slate-400 truncate">ID: {user?.uid.substring(0,8)}...</p>
+                     </div>
+                     <button onClick={() => handleOpenModal('profile')} className="text-slate-400 hover:text-indigo-600 p-1" title="Configurações">
+                       <Settings size={16} />
+                     </button>
+                     <button onClick={handleLogout} className="text-slate-400 hover:text-red-600 p-1" title="Sair">
+                       <LogOut size={16} />
+                     </button>
+                   </div>
+                </div>
+              </aside>
+
+              <main className="flex-1 flex flex-col h-full relative overflow-hidden">
+                <header className="md:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200 z-20">
+                  <h1 className="font-bold text-indigo-700">Estoque Inteligente</h1>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => handleOpenModal('profile')} className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700">
+                      <User size={16} />
+                    </button>
+                    <button onClick={handleLogout} className="text-slate-500 hover:text-red-600 p-1">
+                      <LogOut size={20} />
+                    </button>
+                  </div>
+                </header>
+
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
+                  <div className="max-w-6xl mx-auto">
+                    {currentView === 'dashboard' && renderDashboard()}
+                    {currentView === 'products' && renderProducts()}
+                    {currentView === 'suppliers' && renderSuppliers()}
+                    {currentView === 'transactions' && renderTransactions()}
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => handleOpenModal('stockChat')}
+                  className="fixed bottom-20 md:bottom-8 right-6 z-40 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center gap-2 group"
+                  title="Assistente de Estoque"
+                >
+                  <Sparkles size={24} className="group-hover:rotate-12 transition-transform" />
+                  <span className="hidden group-hover:inline max-w-0 group-hover:max-w-xs transition-all duration-300 overflow-hidden whitespace-nowrap text-sm font-semibold">Assistente IA</span>
+                </button>
+
+                <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-30 flex justify-around p-2 pb-safe">
+                   {[
+                    { id: 'dashboard', label: 'Dash', icon: LayoutDashboard },
+                    { id: 'products', label: 'Prod', icon: Package },
+                    { id: 'transactions', label: 'Saídas', icon: ArrowUpRight },
+                    { id: 'suppliers', label: 'Forn', icon: Truck },
+                  ].map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => setCurrentView(item.id)}
+                      className={`flex flex-col items-center gap-1 p-2 rounded-lg text-[10px] font-medium transition-colors ${currentView === item.id ? 'text-indigo-600' : 'text-slate-400'}`}
+                    >
+                      <item.icon size={20} strokeWidth={currentView === item.id ? 2.5 : 2} />
+                      {item.label}
+                    </button>
+                  ))}
+                </nav>
+              </main>
+
+              {/* Modais */}
+              <Modal 
+                isOpen={modalType === 'product'} 
+                onClose={handleCloseModal}
+                title={editingItem ? "Editar Produto" : "Novo Produto"}
+              >
+                <form onSubmit={saveProduct}>
+                  <Input label="Nome do Produto" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} required />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input label="Categoria" value={formData.category || ''} onChange={e => setFormData({...formData, category: e.target.value})} required placeholder="Ex: Bebidas" />
+                    <Select 
+                      label="Unidade" 
+                      value={formData.unit || 'UN'} 
+                      onChange={e => setFormData({...formData, unit: e.target.value})}
+                      options={[
+                        {label: 'Unidade (UN)', value: 'UN'},
+                        {label: 'Caixa (CX)', value: 'CX'},
+                        {label: 'Quilo (KG)', value: 'KG'},
+                        {label: 'Litro (L)', value: 'L'},
+                        {label: 'Pacote (PCT)', value: 'PCT'},
+                      ]} 
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input label="Preço Unitário (R$)" type="number" step="0.01" value={formData.price || ''} onChange={e => setFormData({...formData, price: e.target.value})} required />
+                    <Input label="Validade" type="date" value={formData.expiryDate || ''} onChange={e => setFormData({...formData, expiryDate: e.target.value})} />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input label="Qtd Atual" type="number" value={formData.quantity || ''} onChange={e => setFormData({...formData, quantity: e.target.value})} required />
+                    <Input label="Estoque Mínimo" type="number" value={formData.minStock || ''} onChange={e => setFormData({...formData, minStock: e.target.value})} required />
+                  </div>
+                  <Select 
+                    label="Fornecedor Padrão"
+                    value={formData.supplierId || ''}
+                    onChange={e => setFormData({...formData, supplierId: e.target.value})}
+                    options={suppliers.map(s => ({ label: s.name, value: s.id }))}
+                  />
+                  <div className="flex justify-end gap-3 mt-6">
+                    <Button variant="secondary" onClick={handleCloseModal} type="button">Cancelar</Button>
+                    <Button type="submit">Salvar Produto</Button>
+                  </div>
+                </form>
+              </Modal>
+
+              <Modal 
+                isOpen={modalType === 'supplier'} 
+                onClose={handleCloseModal}
+                title={editingItem ? "Editar Fornecedor" : "Novo Fornecedor"}
+              >
+                <form onSubmit={saveSupplier}>
+                  <Input label="Nome / Razão Social" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} required />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input label="CNPJ" value={formData.cnpj || ''} onChange={e => setFormData({...formData, cnpj: e.target.value})} placeholder="00.000.000/0000-00" />
+                    <Input label="Contato (Tel/Email)" value={formData.contact || ''} onChange={e => setFormData({...formData, contact: e.target.value})} />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input label="Prazo Entrega (Dias)" type="number" value={formData.deliveryTime || ''} onChange={e => setFormData({...formData, deliveryTime: e.target.value})} />
+                    <div className="mb-4">
+                       <label className="block text-sm font-medium text-slate-700 mb-1.5">Avaliação</label>
+                       <StarRating rating={formData.rating || 5} setRating={(r) => setFormData({...formData, rating: r})} />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-3 mt-6">
+                    <Button variant="secondary" onClick={handleCloseModal} type="button">Cancelar</Button>
+                    <Button type="submit">Salvar Fornecedor</Button>
+                  </div>
+                </form>
+              </Modal>
+
+              <Modal 
+                isOpen={modalType === 'output'} 
+                onClose={handleCloseModal}
+                title="Registrar Saída (Consumo)"
+              >
+                <form onSubmit={registerOutput}>
+                  <Select 
+                    label="Produto"
+                    value={formData.productId || ''}
+                    onChange={e => setFormData({...formData, productId: e.target.value})}
+                    required
+                    options={products.map(p => ({ label: `${p.name} (Saldo: ${p.quantity})`, value: p.id }))}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input label="Quantidade a Retirar" type="number" min="1" value={formData.quantity || ''} onChange={e => setFormData({...formData, quantity: e.target.value})} required />
+                    <Input label="Destino / Centro de Custo" value={formData.destination || ''} onChange={e => setFormData({...formData, destination: e.target.value})} placeholder="Ex: Cozinha, Limpeza" required />
+                  </div>
+                  <Input label="Responsável" value={formData.responsible || ''} onChange={e => setFormData({...formData, responsible: e.target.value})} required />
+                  
+                  <div className="p-3 bg-amber-50 rounded-lg text-amber-800 text-xs mb-4 flex items-center gap-2">
+                     <AlertTriangle size={16} /> A saída será deduzida imediatamente do estoque.
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-6">
+                    <Button variant="secondary" onClick={handleCloseModal} type="button">Cancelar</Button>
+                    <Button type="submit" variant="primary">Confirmar Saída</Button>
+                  </div>
+                </form>
+              </Modal>
+
+              <Modal
+                isOpen={modalType === 'stockChat'} 
+                onClose={handleCloseModal}
+                title="Assistente de Estoque IA"
+                size="lg"
+              >
+                <div className="flex flex-col h-[60vh]">
+                  <div className="flex-1 bg-slate-50 rounded-xl p-4 mb-4 overflow-y-auto border border-slate-200">
+                     {chatMessages.length === 0 ? (
+                       <div className="h-full flex flex-col items-center justify-center text-slate-400 text-center p-8">
+                         <Sparkles size={48} className="mb-4 text-indigo-300" />
+                         <h4 className="text-lg font-semibold text-slate-600 mb-2">Olá! Sou seu Assistente de Estoque.</h4>
+                         <p className="text-sm max-w-xs mx-auto">Posso analisar seus produtos e ajudar com informações. Tente perguntar:</p>
+                         <div className="mt-4 space-y-2 text-xs text-indigo-600">
+                            <p className="bg-indigo-50 px-3 py-1.5 rounded-full inline-block mx-1">"Quais produtos estão vencendo?"</p>
+                            <p className="bg-indigo-50 px-3 py-1.5 rounded-full inline-block mx-1">"Qual o valor total do estoque?"</p>
+                            <p className="bg-indigo-50 px-3 py-1.5 rounded-full inline-block mx-1">"Preciso comprar algo?"</p>
+                         </div>
+                       </div>
+                     ) : (
+                       <div className="space-y-4">
+                         {chatMessages.map(msg => (
+                           <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                             <div className={`px-4 py-3 max-w-[85%] shadow-sm ${
+                               msg.sender === 'user' 
+                                 ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none' 
+                                 : 'bg-white border border-slate-200 text-slate-700 rounded-2xl rounded-tl-none'
+                             }`}>
+                                <div className="flex items-center gap-2 mb-1">
+                                  {msg.sender !== 'user' && <Sparkles size={12} className="text-indigo-500" />}
+                                  <span className={`text-[10px] font-bold uppercase tracking-wide ${msg.sender === 'user' ? 'text-indigo-200' : 'text-slate-400'}`}>
+                                    {msg.sender === 'user' ? 'Você' : 'Assistente IA'}
+                                  </span>
+                                </div>
+                                <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</p>
+                                <p className={`text-[10px] mt-1 text-right ${msg.sender === 'user' ? 'text-indigo-200' : 'text-slate-400'}`}>
+                                  {msg.createdAt instanceof Date ? msg.createdAt.toLocaleString('pt-BR') : '...'}
+                                </p>
+                             </div>
+                           </div>
+                         ))}
+                         
+                         {isAiTyping && (
+                           <div className="flex justify-start">
+                             <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm flex items-center gap-2">
+                               <Loader2 size={16} className="animate-spin text-indigo-500" />
+                               <span className="text-xs text-slate-500 italic">Analisando estoque...</span>
+                             </div>
+                           </div>
+                         )}
+                         <div ref={messagesEndRef} />
+                       </div>
+                     )}
+                  </div>
+                  
+                  <div className="flex flex-col gap-2">
+                    <div className="relative">
+                      <textarea
+                        value={messageInput}
+                        onChange={(e) => setMessageInput(e.target.value)}
+                        placeholder="Pergunte sobre seu estoque..."
+                        className="w-full p-4 pr-12 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm resize-none h-14"
+                        spellCheck={false}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
+                      />
+                      <div className="absolute bottom-3 right-3">
+                         <Button 
+                           onClick={handleSendMessage} 
+                           icon={Send} 
+                           disabled={!messageInput.trim() || isAiTyping}
+                           className="!p-2 !rounded-full !h-8 !w-8 flex items-center justify-center"
+                         >
+                         </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Modal>
+
+              <Modal
+                isOpen={modalType === 'profile'}
+                onClose={handleCloseModal}
+                title="Editar Perfil"
+                size="md"
+              >
+                <form onSubmit={saveProfile}>
+                  <Input 
+                    label="Nome de Exibição" 
+                    value={formData.name || ''} 
+                    onChange={e => setFormData({...formData, name: e.target.value})} 
+                    required 
+                    placeholder="Seu nome"
+                  />
+                  <div className="flex justify-end gap-3 mt-6">
+                    <Button variant="secondary" onClick={handleCloseModal} type="button">Cancelar</Button>
+                    <Button type="submit">Salvar Alterações</Button>
+                  </div>
+                </form>
+              </Modal>
+
+              <Modal 
+                isOpen={confirmation.isOpen} 
+                onClose={() => setConfirmation({ ...confirmation, isOpen: false })}
+                title={confirmation.title}
+                size="md"
+              >
+                <div className="flex flex-col items-center text-center p-4">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${confirmation.singleButton ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'}`}>
+                    {confirmation.singleButton ? <AlertCircle size={24} /> : <Trash2 size={24} />}
+                  </div>
+                  <p className="text-slate-600 mb-6">{confirmation.message}</p>
+                  <div className="flex gap-3 w-full justify-center">
+                    {confirmation.singleButton ? (
+                       <Button variant="primary" onClick={() => setConfirmation({ ...confirmation, isOpen: false })}>
+                         Entendido
+                       </Button>
+                    ) : (
+                      <>
+                        <Button variant="secondary" onClick={() => setConfirmation({ ...confirmation, isOpen: false })}>
+                          Cancelar
+                        </Button>
+                        <Button variant="danger" onClick={confirmation.onConfirm}>
+                          Confirmar Exclusão
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </Modal>
+
+            </div>
+          );
         }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
-
